@@ -1,7 +1,7 @@
 'use strict';
 
-const GROK_ENDPOINT = 'https://api.x.ai/v1/chat/completions';
-const DEFAULT_MODEL = 'grok-3-mini';
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+const DEFAULT_MODEL = 'llama-3.1-8b-instant';
 const SYSTEM_PROMPT = 'Sei un analista finanziario. Rispondi sempre in italiano in modo chiaro, concreto e conciso.';
 
 function sendJson(res, statusCode, payload) {
@@ -14,7 +14,11 @@ function sendJson(res, statusCode, payload) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Allow', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Origin', 'https://dragonkrakow.github.io');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   }
+  if (statusCode === 204) return res.end();
   res.end(JSON.stringify(payload));
 }
 
@@ -44,11 +48,12 @@ function extractText(payload) {
   return '';
 }
 
-async function requestGrok(prompt, { apiKey, model = DEFAULT_MODEL, fetchImpl = fetch } = {}) {
+async function requestGroq(prompt, { apiKey, model = DEFAULT_MODEL, fetchImpl = fetch } = {}) {
   if (typeof apiKey !== 'string' || !apiKey.trim()) {
-    throw new Error('Server AI non configurato. Imposta la variabile GROK_API nel deploy server-side.');
+    throw new Error('Server AI non configurato. Imposta la variabile GROQ_API nel deploy server-side.');
   }
-  const response = await fetchImpl(GROK_ENDPOINT, {
+
+  const response = await fetchImpl(GROQ_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -81,7 +86,7 @@ async function requestGrok(prompt, { apiKey, model = DEFAULT_MODEL, fetchImpl = 
 
   const text = extractText(payload);
   if (!text) throw new Error('La risposta AI è vuota.');
-  return { text, model: payload.model || model };
+  return { text, model: payload.model || model, provider: 'groq' };
 }
 
 async function handler(req, res, { env = process.env, fetchImpl = fetch } = {}) {
@@ -93,8 +98,8 @@ async function handler(req, res, { env = process.env, fetchImpl = fetch } = {}) 
     return sendJson(res, 405, { error: 'Usa POST /api/ai per richiedere una nuova analisi.' });
   }
 
-  if (!env.GROK_API) {
-    return sendJson(res, 500, { error: 'Server AI non configurato. Imposta la variabile GROK_API nel deploy server-side.' });
+  if (!env.GROQ_API) {
+    return sendJson(res, 500, { error: 'Server AI non configurato. Imposta la variabile GROQ_API nel deploy server-side.' });
   }
 
   let body;
@@ -110,9 +115,9 @@ async function handler(req, res, { env = process.env, fetchImpl = fetch } = {}) 
   }
 
   try {
-    const result = await requestGrok(prompt, {
-      apiKey: env.GROK_API,
-      model: env.GROK_MODEL || DEFAULT_MODEL,
+    const result = await requestGroq(prompt, {
+      apiKey: env.GROQ_API,
+      model: env.GROQ_MODEL || DEFAULT_MODEL,
       fetchImpl
     });
     return sendJson(res, 200, result);
@@ -121,10 +126,10 @@ async function handler(req, res, { env = process.env, fetchImpl = fetch } = {}) 
   }
 }
 
-module.exports = function vercelHandler(req, res) {
+module.exports = function handlerEntry(req, res) {
   return handler(req, res);
 };
 
 module.exports.handler = handler;
-module.exports.requestGrok = requestGrok;
+module.exports.requestGroq = requestGroq;
 module.exports.extractText = extractText;
