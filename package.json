@@ -1,7 +1,12 @@
 {
-  "name": "findemo",
+  "name": "findemo-ai",
+  "version": "1.0.0",
   "private": true,
+  "main": "server.js",
   "scripts": {
-    "test": "node --test"
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
   }
 }
