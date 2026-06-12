@@ -45,6 +45,9 @@ function extractText(payload) {
 }
 
 async function requestGrok(prompt, { apiKey, model = DEFAULT_MODEL, fetchImpl = fetch } = {}) {
+  if (typeof apiKey !== 'string' || !apiKey.trim()) {
+    throw new Error('Server AI non configurato. Imposta la variabile GROK_API nel deploy server-side.');
+  }
   const response = await fetchImpl(GROK_ENDPOINT, {
     method: 'POST',
     headers: {

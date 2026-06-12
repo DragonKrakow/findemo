@@ -1263,7 +1263,7 @@ async function callAI(prompt, targetId, barId) {
   target.textContent = 'Analisi AI in corso...';
   target.style.opacity = '0.6';
   if (bar) { bar.classList.add('active'); }
-  let timeout;
+  let timeout = null;
   try {
     const controller = new AbortController();
     timeout = setTimeout(() => controller.abort(), 45000);
