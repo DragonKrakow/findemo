@@ -934,6 +934,7 @@ let modalChartInst = null;
 let dbFilter = 'all';
 let dbSearch = '';
 let autoRefreshTimer = null;
+const AI_ENDPOINT = (window.FINDEMO_AI_ENDPOINT && window.FINDEMO_AI_ENDPOINT.trim()) || '/api/ai';
 const REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 hours
 
 // ═══════════════════════════════════════════════
@@ -1258,45 +1259,65 @@ function getPerfData(p) {
 async function callAI(prompt, targetId, barId) {
   const target = document.getElementById(targetId);
   const bar = barId ? document.getElementById(barId) : null;
-  if (!target) return;
+  if (!target) return { ok:false, error:'Target AI non trovato.' };
   target.textContent = 'Analisi AI in corso...';
   target.style.opacity = '0.6';
   if (bar) { bar.classList.add('active'); }
+  let timeout;
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514', max_tokens:1000,
-        messages:[{role:'user',content:prompt}]
-      })
+    const controller = new AbortController();
+    timeout = setTimeout(() => controller.abort(), 45000);
+    const res = await fetch(AI_ENDPOINT, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify({ prompt }),
+      signal: controller.signal
     });
-    const data = await res.json();
-    const text = data.content?.map(c=>c.text||'').join('')||'Errore nella risposta AI.';
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const text = res.status===404
+        ? 'AI non configurata su questo deploy. Pubblica il sito con un endpoint server-side /api/ai e imposta la variabile GROK_API.'
+        : data?.error || 'Servizio AI non disponibile al momento. Verifica la configurazione server-side e riprova.';
+      target.textContent = text;
+      target.style.opacity='1';
+      return { ok:false, error:text };
+    }
+    const text = (typeof data?.text === 'string' && data.text.trim()) ? data.text.trim() : 'Errore nella risposta AI.';
     target.textContent = text;
     target.style.opacity='1';
+    setLastRefresh();
+    return { ok:true, text };
   } catch(e) {
-    target.textContent = 'Errore di connessione all\'AI. Verifica la connessione.';
+    const text = e.name==='AbortError'
+      ? 'L\'analisi AI sta impiegando troppo tempo. Riprova tra qualche secondo.'
+      : 'AI non raggiungibile. Verifica che il deploy esponga /api/ai e che GROK_API sia configurato sul server.';
+    target.textContent = text;
     target.style.opacity='1';
+    return { ok:false, error:text };
+  } finally {
+    clearTimeout(timeout);
+    if (bar) bar.classList.remove('active');
   }
-  if (bar) bar.classList.remove('active');
-  setLastRefresh();
 }
 
 async function askAI(section, prompt) {
-  const ids = {overview:['ai-overview-text','ai-overview-bar'], timeline:['ai-timeline-text','ai-timeline-bar'], signals:['ai-signals-text','ai-signals-bar']};
+  const ids = {overview:['ai-overview-text','ai-overview-bar'], timeline:['ai-timeline-text','ai-timeline-bar'], signals:['ai-signals-text','ai-signals-bar'], add:['ai-suggest-text','ai-suggest-bar']};
   const [tid, bid] = ids[section]||['ai-overview-text','ai-overview-bar'];
-  if (section==='timeline') { document.getElementById('timeline-static').style.display='none'; document.getElementById('ai-timeline-text').style.display='block'; }
-  await callAI(prompt, tid, bid);
+  const timelineStatic = section==='timeline' ? document.getElementById('timeline-static') : null;
+  const timelineText = section==='timeline' ? document.getElementById('ai-timeline-text') : null;
+  if (timelineText) timelineText.style.display='block';
+  const result = await callAI(prompt, tid, bid);
+  if (timelineStatic) timelineStatic.style.display = result.ok ? 'none' : 'block';
+  return result;
 }
 
 async function runAIRefresh() {
   const btn = document.getElementById('refresh-btn');
   btn.disabled=true; btn.textContent='⟳ Analisi in corso...';
   const prompt = 'Briefing mercati globali in italiano (maggio 2026), 200 parole max: 1) Situazione macro chiave (guerra Iran, dazi, AI) 2) Top 3 settori da sovrappesare con motivazione 3) Top 3 settori da sottopesare 4) Un\'opportunità specifica e un rischio da monitorare questa settimana.';
-  await callAI(prompt, 'ai-overview-text', 'ai-overview-bar');
+  const result = await callAI(prompt, 'ai-overview-text', 'ai-overview-bar');
   btn.disabled=false; btn.textContent='⟳ Aggiorna Analisi AI';
-  showToast('✓ Analisi AI aggiornata!');
-  setLastRefresh();
+  showToast(result.ok ? '✓ Analisi AI aggiornata!' : '⚠ Aggiornamento AI non riuscito');
 }
 
 async function analyzePortfolio() {
