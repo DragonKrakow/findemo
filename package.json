@@ -1,0 +1,7 @@
+{
+  "name": "findemo",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}
