@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinDashboard Pro — Analisi di Mercato</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --white: #ffffff;
+  --off-white: #f7f9fc;
+  --light-blue: #e8f0fb;
+  --mid-blue: #d0e3f7;
+  --blue: #2563eb;
+  --blue-dark: #1d4ed8;
+  --blue-deep: #1e3a5f;
+  --blue-stripe: #eaf2ff;
+  --black: #0d1117;
+  --gray-900: #1a202c;
+  --gray-700: #374151;
+  --gray-500: #6b7280;
+  --gray-300: #d1d5db;
+  --gray-100: #f3f4f6;
+  --green: #16a34a;
+  --green-light: #dcfce7;
+  --red: #dc2626;
+  --red-light: #fee2e2;
+  --amber: #d97706;
+  --amber-light: #fef3c7;
+  --border: #e2e8f0;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(37,99,235,0.10);
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--off-white);color:var(--black);font-size:14px;line-height:1.6;}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--gray-100);}
+::-webkit-scrollbar-thumb{background:var(--mid-blue);border-radius:3px;}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:236px;flex-shrink:0;
+  background:var(--blue-deep);
+  color:white;
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sidebar-logo{
+  padding:24px 20px 20px;
+  border-bottom:1px solid rgba(255,255,255,0.1);
+}
+.logo-brand{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.3px;}
+.logo-tagline{font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;}
+
+.sidebar-nav{padding:12px 0;flex:1;}
+.nav-section-label{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.35);padding:12px 20px 4px;}
+.nav-btn{
+  display:flex;align-items:center;gap:10px;
+  width:100%;padding:9px 20px;
+  background:none;border:none;color:rgba(255,255,255,0.7);
+  font-family:'IBM Plex Sans',sans-serif;font-size:13px;
+  cursor:pointer;text-align:left;
+  border-left:3px solid transparent;
+  transition:all 0.15s;
+}
+.nav-btn:hover{background:rgba(255,255,255,0.07);color:white;}
+.nav-btn.active{background:rgba(255,255,255,0.1);color:white;border-left-color:#60a5fa;}
+.nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
+.nav-count{margin-left:auto;background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.7);
+  font-size:10px;padding:1px 6px;border-radius:10px;font-family:'IBM Plex Mono',monospace;}
+.nav-count.green{background:rgba(22,163,74,0.3);color:#86efac;}
+.nav-count.red{background:rgba(220,38,38,0.3);color:#fca5a5;}
+
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.1);}
+.refresh-info{font-size:11px;color:rgba(255,255,255,0.4);line-height:1.8;}
+.refresh-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;margin-right:5px;vertical-align:middle;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--white);
+  border-bottom:1px solid var(--border);
+  padding:12px 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:20;
+  box-shadow:0 1px 4px rgba(37,99,235,0.06);
+}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:var(--black);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.alert-chip{
+  background:var(--red-light);border:1px solid rgba(220,38,38,0.25);
+  color:var(--red);padding:4px 12px;border-radius:20px;
+  font-size:11px;font-weight:600;
+}
+.info-chip{
+  background:var(--light-blue);border:1px solid rgba(37,99,235,0.2);
+  color:var(--blue);padding:4px 10px;border-radius:20px;
+  font-size:11px;font-family:'IBM Plex Mono',monospace;
+}
+.refresh-btn{
+  background:var(--blue);color:white;border:none;
+  padding:6px 14px;border-radius:var(--radius-sm);
+  font-size:12px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;
+  transition:background 0.15s;display:flex;align-items:center;gap:6px;
+}
+.refresh-btn:hover{background:var(--blue-dark);}
+.refresh-btn:disabled{background:var(--gray-300);cursor:not-allowed;}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-x:hidden;min-width:0;}
+.content{padding:24px 28px;}
+
+/* ── SECTIONS ── */
+.section{display:none;}
+.section.active{display:block;animation:fadeUp 0.2s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── KPI STRIP ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.kpi-card{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px 18px;
+  border-top:3px solid var(--blue);
+  box-shadow:var(--shadow);
+}
+.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--gray-500);margin-bottom:6px;}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:500;color:var(--black);}
+.kpi-value.green{color:var(--green);}
+.kpi-value.red{color:var(--red);}
+.kpi-value.blue{color:var(--blue);}
+.kpi-sub{font-size:11px;color:var(--gray-500);margin-top:3px;}
+
+/* ── SECTION HEADER ── */
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.sec-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:var(--black);}
+.sec-sub{font-size:12px;color:var(--gray-500);margin-top:1px;}
+
+/* ── ALERT BANNER ── */
+.alert-banner{
+  background:linear-gradient(90deg,var(--light-blue) 0%,var(--white) 100%);
+  border:1px solid rgba(37,99,235,0.2);
+  border-left:4px solid var(--blue);
+  border-radius:var(--radius);padding:12px 16px;
+  margin-bottom:20px;display:flex;gap:12px;align-items:flex-start;
+}
+.alert-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.alert-body{}
+.alert-title{font-weight:600;color:var(--blue-deep);font-size:13px;margin-bottom:2px;}
+.alert-text{font-size:12px;color:var(--gray-700);line-height:1.6;}
+
+/* ── CARD ── */
+.card{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:20px 22px;margin-bottom:16px;
+}
+.card-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:var(--black);margin-bottom:4px;}
+.card-sub{font-size:11px;color:var(--gray-500);margin-bottom:14px;}
+
+/* ── GRID ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;}
+
+/* ── BLUE STRIPE TABLE ── */
+.stripe-table{width:100%;border-collapse:collapse;font-size:13px;}
+.stripe-table th{
+  background:var(--blue-deep);color:white;
+  padding:10px 14px;text-align:left;font-size:10px;
+  text-transform:uppercase;letter-spacing:0.8px;font-weight:600;
+  white-space:nowrap;
+}
+.stripe-table th:first-child{border-radius:6px 0 0 0;}
+.stripe-table th:last-child{border-radius:0 6px 0 0;}
+.stripe-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.stripe-table tr:nth-child(even) td{background:var(--blue-stripe);}
+.stripe-table tr:hover td{background:var(--light-blue);cursor:pointer;}
+.stripe-table tr:last-child td{border-bottom:none;}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap;}
+.badge-buy{background:var(--green-light);color:var(--green);}
+.badge-hold{background:var(--amber-light);color:var(--amber);}
+.badge-sell{background:var(--red-light);color:var(--red);}
+.badge-blue{background:var(--light-blue);color:var(--blue);}
+.badge-gray{background:var(--gray-100);color:var(--gray-700);}
+
+/* ── SIGNAL BULLETS ── */
+.sig-row{display:flex;gap:8px;align-items:center;}
+.sig-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.sig-dot.buy{background:var(--green);}
+.sig-dot.hold{background:var(--amber);}
+.sig-dot.sell{background:var(--red);}
+
+/* ── RISK BAR ── */
+.risk-bar{width:70px;height:6px;background:var(--gray-100);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;}
+.risk-fill{height:100%;border-radius:3px;}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+.filter-btn{
+  padding:5px 13px;border-radius:20px;
+  border:1px solid var(--border);background:var(--white);
+  color:var(--gray-700);font-size:12px;cursor:pointer;
+  font-family:'IBM Plex Sans',sans-serif;transition:all 0.15s;
+}
+.filter-btn:hover{border-color:var(--blue);color:var(--blue);}
+.filter-btn.active{background:var(--blue);border-color:var(--blue);color:white;font-weight:600;}
+.search-input{
+  margin-left:auto;background:var(--off-white);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:6px 12px;
+  color:var(--black);font-size:12px;font-family:'IBM Plex Sans',sans-serif;
+  width:200px;outline:none;transition:border-color 0.15s;
+}
+.search-input:focus{border-color:var(--blue);background:white;}
+
+/* ── AI ANALYSIS PANEL ── */
+.ai-panel{
+  background:linear-gradient(135deg,var(--blue-deep) 0%,#1e40af 100%);
+  color:white;border-radius:var(--radius);padding:20px 22px;
+  margin-bottom:16px;position:relative;overflow:hidden;
+}
+.ai-panel::before{
+  content:'';position:absolute;top:-30px;right:-30px;
+  width:120px;height:120px;border-radius:50%;
+  background:rgba(255,255,255,0.04);
+}
+.ai-panel-title{font-family:'Playfair Display',serif;font-size:16px;margin-bottom:4px;position:relative;}
+.ai-panel-sub{font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:14px;position:relative;}
+.ai-response{
+  font-size:13px;line-height:1.75;color:rgba(255,255,255,0.9);
+  min-height:60px;position:relative;
+}
+.ai-response.loading::after{content:'Analisi in corso...';color:rgba(255,255,255,0.5);font-style:italic;}
+.ai-loading-bar{
+  height:3px;background:rgba(255,255,255,0.15);border-radius:2px;
+  margin-top:12px;overflow:hidden;display:none;
+}
+.ai-loading-bar.active{display:block;}
+.ai-loading-fill{
+  height:100%;width:30%;background:rgba(255,255,255,0.6);border-radius:2px;
+  animation:aiload 1.5s ease-in-out infinite;
+}
+@keyframes aiload{0%{transform:translateX(-100%);}100%{transform:translateX(400%);}
+}
+.ai-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.ai-action-btn{
+  padding:6px 14px;border-radius:20px;font-size:11px;font-weight:600;
+  cursor:pointer;font-family:'IBM Plex Sans',sans-serif;border:1px solid rgba(255,255,255,0.3);
+  background:rgba(255,255,255,0.1);color:white;transition:all 0.15s;
+}
+.ai-action-btn:hover{background:rgba(255,255,255,0.2);}
+
+/* ── ADD PRODUCT FORM ── */
+.add-form{
+  background:var(--white);border:2px dashed var(--mid-blue);
+  border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;
+}
+.add-form-title{font-family:'Playfair Display',serif;font-size:15px;color:var(--blue-deep);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-label{font-size:10px;text-transform:uppercase;letter-spacing:0.7px;color:var(--gray-500);font-weight:600;}
+.form-input,.form-select{
+  background:var(--off-white);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:7px 10px;
+  color:var(--black);font-size:13px;font-family:'IBM Plex Sans',sans-serif;
+  outline:none;transition:border-color 0.15s;
+}
+.form-input:focus,.form-select:focus{border-color:var(--blue);background:white;}
+.form-actions{display:flex;gap:8px;margin-top:12px;}
+.btn-primary{background:var(--blue);color:white;border:none;padding:8px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:background 0.15s;}
+.btn-primary:hover{background:var(--blue-dark);}
+.btn-secondary{background:var(--white);color:var(--gray-700);border:1px solid var(--border);padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;}
+.btn-secondary:hover{border-color:var(--blue);color:var(--blue);}
+.btn-danger{background:var(--white);color:var(--red);border:1px solid rgba(220,38,38,0.2);padding:4px 10px;border-radius:var(--radius-sm);font-size:11px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;}
+.btn-danger:hover{background:var(--red-light);}
+
+/* ── DETAIL MODAL ── */
+.modal-overlay{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.45);z-index:100;
+  align-items:center;justify-content:center;backdrop-filter:blur(3px);
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--white);border-radius:14px;width:860px;max-width:95vw;
+  max-height:90vh;overflow-y:auto;padding:28px 32px;position:relative;
+  box-shadow:0 20px 60px rgba(37,99,235,0.15);
+  border-top:4px solid var(--blue);
+}
+.modal-close{
+  position:absolute;top:16px;right:16px;
+  background:var(--gray-100);border:none;width:30px;height:30px;
+  border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  color:var(--gray-700);transition:all 0.15s;
+}
+.modal-close:hover{background:var(--red-light);color:var(--red);}
+.modal-header{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.modal-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--black);margin-bottom:6px;}
+.modal-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.modal-body{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;}
+.modal-stat{background:var(--off-white);border-radius:var(--radius-sm);padding:12px 14px;}
+.modal-stat-label{font-size:10px;text-transform:uppercase;letter-spacing:0.7px;color:var(--gray-500);margin-bottom:4px;}
+.modal-stat-value{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:500;color:var(--black);}
+.modal-section-title{font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--gray-500);margin:14px 0 6px;}
+.modal-text{font-size:13px;color:var(--gray-700);line-height:1.7;}
+.trigger-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;}
+.trig-col{border-radius:var(--radius-sm);padding:12px 14px;}
+.trig-col.buy{background:var(--green-light);border:1px solid rgba(22,163,74,0.2);}
+.trig-col.hold{background:var(--amber-light);border:1px solid rgba(217,119,6,0.2);}
+.trig-col.sell{background:var(--red-light);border:1px solid rgba(220,38,38,0.2);}
+.trig-title{font-size:10px;text-transform:uppercase;letter-spacing:0.7px;font-weight:700;margin-bottom:8px;}
+.trig-title.buy{color:var(--green);}
+.trig-title.hold{color:var(--amber);}
+.trig-title.sell{color:var(--red);}
+.trig-item{font-size:11px;color:var(--gray-700);padding:3px 0;border-bottom:1px solid rgba(0,0,0,0.06);line-height:1.5;}
+.trig-item:last-child{border-bottom:none;}
+.modal-ai-section{margin-top:16px;background:var(--blue-deep);border-radius:var(--radius);padding:16px 18px;color:white;}
+.modal-ai-title{font-size:12px;text-transform:uppercase;letter-spacing:0.7px;color:rgba(255,255,255,0.5);margin-bottom:8px;}
+.modal-ai-text{font-size:13px;line-height:1.7;color:rgba(255,255,255,0.9);min-height:40px;}
+.modal-chart-wrap{height:200px;margin-top:16px;position:relative;}
+
+/* ── SOURCE PILLS ── */
+.source-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.source-card{
+  background:var(--white);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;border-left:3px solid var(--blue);transition:box-shadow 0.15s;
+  cursor:default;
+}
+.source-card:hover{box-shadow:var(--shadow-md);}
+.source-name{font-weight:600;font-size:13px;color:var(--black);margin-bottom:3px;}
+.source-meta{font-size:11px;color:var(--gray-500);}
+.source-type{font-size:10px;background:var(--light-blue);color:var(--blue);padding:1px 6px;border-radius:4px;display:inline-block;margin-top:4px;font-weight:500;}
+
+/* ── MACRO CARD ── */
+.macro-card{
+  background:var(--white);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;margin-bottom:12px;border-top:3px solid;
+}
+.macro-card.red-top{border-top-color:var(--red);}
+.macro-card.green-top{border-top-color:var(--green);}
+.macro-card.blue-top{border-top-color:var(--blue);}
+.macro-card.amber-top{border-top-color:var(--amber);}
+.macro-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.macro-title{font-family:'Playfair Display',serif;font-size:15px;color:var(--black);}
+.macro-text{font-size:12px;color:var(--gray-700);line-height:1.7;}
+.macro-impacts{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
+.impact-tag{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;}
+.impact-pos{background:var(--green-light);color:var(--green);}
+.impact-neg{background:var(--red-light);color:var(--red);}
+.impact-mix{background:var(--amber-light);color:var(--amber);}
+
+/* ── TIMELINE ── */
+.timeline{position:relative;padding-left:22px;}
+.timeline::before{content:'';position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--mid-blue);}
+.timeline-item{position:relative;margin-bottom:18px;}
+.tl-dot{position:absolute;left:-17px;top:4px;width:12px;height:12px;border-radius:50%;border:2px solid;flex-shrink:0;}
+.tl-dot.red{background:var(--red-light);border-color:var(--red);}
+.tl-dot.green{background:var(--green-light);border-color:var(--green);}
+.tl-dot.blue{background:var(--light-blue);border-color:var(--blue);}
+.tl-dot.amber{background:var(--amber-light);border-color:var(--amber);}
+.tl-date{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--gray-500);margin-bottom:2px;}
+.tl-title{font-size:13px;font-weight:600;color:var(--black);margin-bottom:3px;}
+.tl-body{font-size:12px;color:var(--gray-700);line-height:1.6;}
+
+/* ── COUNTER BADGE ── */
+.counter{
+  background:var(--light-blue);color:var(--blue);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  padding:2px 8px;border-radius:10px;display:inline-block;
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .sidebar{display:none;}
+  .kpi-strip{grid-template-columns:repeat(2,1fr);}
+  .grid-2,.trigger-grid,.modal-body{grid-template-columns:1fr;}
+}
+
+/* ── CHART WRAPPER ── */
+.chart-wrap{height:220px;position:relative;}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:36px;color:var(--gray-500);font-size:13px;}
+.empty-icon{font-size:28px;margin-bottom:8px;}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:20px;right:20px;z-index:200;
+  background:var(--blue-deep);color:white;
+  padding:10px 18px;border-radius:var(--radius);font-size:13px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.2);
+  transform:translateY(60px);opacity:0;
+  transition:all 0.3s;pointer-events:none;
+}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* ── SCORE DOT ── */
+.score{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;}
+.score.high{background:var(--green-light);color:var(--green);}
+.score.mid{background:var(--amber-light);color:var(--amber);}
+.score.low{background:var(--red-light);color:var(--red);}
+
+/* ── TICKER MONO ── */
+.ticker{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gray-500);}
+
+/* ── SEPARATOR ── */
+hr.blue{border:none;border-top:2px solid var(--light-blue);margin:16px 0;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-brand">FinDashboard Pro</div>
+    <div class="logo-tagline">Market Intelligence</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Dashboard</div>
+    <button class="nav-btn active" onclick="nav('overview',this)"><span class="nav-icon">◈</span>Overview<span class="nav-count" id="nc-total">—</span></button>
+    <button class="nav-btn" onclick="nav('portfolio',this)"><span class="nav-icon">◉</span>Il Mio Portfolio<span class="nav-count" id="nc-port">0</span></button>
+
+    <div class="nav-section-label">Analisi</div>
+    <button class="nav-btn" onclick="nav('market',this)"><span class="nav-icon">▦</span>Mercati (Database)</button>
+    <button class="nav-btn" onclick="nav('signals',this)"><span class="nav-icon">◎</span>Segnali AI<span class="nav-count green" id="nc-buy">0</span></button>
+    <button class="nav-btn" onclick="nav('charts',this)"><span class="nav-icon">◇</span>Grafici</button>
+    <button class="nav-btn" onclick="nav('macro',this)"><span class="nav-icon">⬡</span>Macro &amp; Geo<span class="nav-count red">4</span></button>
+
+    <div class="nav-section-label">Strumenti</div>
+    <button class="nav-btn" onclick="nav('add',this)"><span class="nav-icon">＋</span>Aggiungi Prodotto</button>
+    <button class="nav-btn" onclick="nav('sources',this)"><span class="nav-icon">◫</span>Fonti News (20)</button>
+    <button class="nav-btn" onclick="nav('timeline',this)"><span class="nav-icon">◐</span>Timeline Notizie</button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="refresh-info">
+      <span class="refresh-dot"></span>AI Attiva<br>
+      <span id="last-refresh">Caricamento...</span><br>
+      Aggiorn. ogni 2 ore<br>
+      Fonti: 20 database
+    </div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title" id="page-title">Overview Portfolio</div>
+    </div>
+    <div class="topbar-right">
+      <span class="alert-chip">⚠ Guerra Iran attiva</span>
+      <span class="info-chip" id="clock">—</span>
+      <button class="refresh-btn" onclick="runAIRefresh()" id="refresh-btn">⟳ Aggiorna Analisi AI</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+  <!-- ══════════════ OVERVIEW ══════════════ -->
+  <div class="section active" id="section-overview">
+    <div class="kpi-strip">
+      <div class="kpi-card"><div class="kpi-label">Prodotti Monitorati</div><div class="kpi-value blue" id="kpi-total">—</div><div class="kpi-sub">in database + portfolio</div></div>
+      <div class="kpi-card" style="border-top-color:var(--green)"><div class="kpi-label">Segnali COMPRA</div><div class="kpi-value green" id="kpi-buy">—</div><div class="kpi-sub">AI consiglia acquisto</div></div>
+      <div class="kpi-card" style="border-top-color:var(--amber)"><div class="kpi-label">Tieni / Monitora</div><div class="kpi-value" style="color:var(--amber)" id="kpi-hold">—</div><div class="kpi-sub">attendere segnali</div></div>
+      <div class="kpi-card" style="border-top-color:var(--red)"><div class="kpi-label">Riduci / Vendi</div><div class="kpi-value red" id="kpi-sell">—</div><div class="kpi-sub">rischio elevato</div></div>
+      <div class="kpi-card" style="border-top-color:var(--amber)"><div class="kpi-label">PIL Mondiale</div><div class="kpi-value">3.1%</div><div class="kpi-sub">FMI apr. 2026 ↓</div></div>
+    </div>
+
+    <div class="alert-banner">
+      <div class="alert-icon">⚡</div>
+      <div class="alert-body">
+        <div class="alert-title">ALLERTA MACRO — Guerra USA-Israele vs Iran (in corso, maggio 2026)</div>
+        <div class="alert-text">Gas EU +98% · Petrolio volatile · FMI: PIL 3.1% scenario base, 2.0% scenario severo · Inflazione 4.4% · Dazi Trump in vigore · Riarmo EU accelerato. Tutti questi fattori impattano direttamente il tuo portfolio.</div>
+      </div>
+    </div>
+
+    <div class="ai-panel">
+      <div class="ai-panel-title">🤖 Analisi AI — Briefing di Mercato</div>
+      <div class="ai-panel-sub">Ultimo aggiornamento: <span id="ai-last-update">—</span> · Basato su 20 fonti internazionali</div>
+      <div class="ai-response" id="ai-overview-text">Premi "Aggiorna Analisi AI" per ricevere un briefing completo aggiornato sui mercati globali e il loro impatto sul tuo portfolio.</div>
+      <div class="ai-loading-bar" id="ai-overview-bar"><div class="ai-loading-fill"></div></div>
+      <div class="ai-actions">
+        <button class="ai-action-btn" onclick="askAI('overview','Fornisci un briefing di mercato completo in italiano: situazione geopolitica (guerra Iran, dazi Trump, riarmo EU), impatto sui settori Difesa, Energia, AI/Semiconductor, Emergenti, e 3 opportunità di investimento concrete con motivazione. Max 250 parole.')">📊 Briefing Completo</button>
+        <button class="ai-action-btn" onclick="askAI('overview','Quali sono i 5 titoli o ETF più interessanti da comprare adesso in Europa e USA, considerando guerra Iran, riarmo EU e boom AI? Motiva ogni scelta in 2 righe. Rispondi in italiano.')">🎯 Top 5 da Comprare</button>
+        <button class="ai-action-btn" onclick="askAI('overview','Quali settori o titoli sono più a rischio adesso? Guerra Iran, dazi USA, crisi Cina. Elenca 5 prodotti da ridurre/vendere con motivazione. Italiano.')">⚠ Cosa Ridurre</button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Distribuzione Segnali</div>
+        <div class="card-sub">Tutti i prodotti in database</div>
+        <div class="chart-wrap"><canvas id="signalDonut"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Esposizione Tematica</div>
+        <div class="card-sub">Portfolio per settore</div>
+        <div class="chart-wrap"><canvas id="themeDonut"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Performance Simulata YTD 2026 — Settori Chiave</div>
+      <div class="card-sub">Indice base 100 = Gennaio 2026 · Dati indicativi da fonti pubbliche</div>
+      <div style="height:240px;position:relative;"><canvas id="perfLine"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ PORTFOLIO ══════════════ -->
+  <div class="section" id="section-portfolio">
+    <div class="sec-header">
+      <div><div class="sec-title">Il Mio Portfolio</div><div class="sec-sub">Prodotti che stai monitorando personalmente · <span id="port-count">0</span> prodotti</div></div>
+      <button class="btn-primary" onclick="nav('add',null)">+ Aggiungi Prodotto</button>
+    </div>
+
+    <div id="portfolio-ai-section">
+      <div class="ai-panel">
+        <div class="ai-panel-title">🤖 Analisi AI — Il Tuo Portfolio</div>
+        <div class="ai-panel-sub">Analisi personalizzata basata sui tuoi prodotti</div>
+        <div class="ai-response" id="ai-port-text">Aggiungi prodotti al portfolio, poi premi per ricevere un'analisi personalizzata.</div>
+        <div class="ai-loading-bar" id="ai-port-bar"><div class="ai-loading-fill"></div></div>
+        <div class="ai-actions">
+          <button class="ai-action-btn" onclick="analyzePortfolio()">📊 Analizza il Mio Portfolio</button>
+          <button class="ai-action-btn" onclick="askPortfolioSignals()">🎯 Segnali Buy/Hold/Sell</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="stripe-table" id="portfolioTable">
+        <thead>
+          <tr>
+            <th>PRODOTTO</th><th>TIPO</th><th>BORSA</th><th>SETTORE</th>
+            <th>SEGNALE AI</th><th>SCORE</th><th>NOTE</th><th>AZIONI</th>
+          </tr>
+        </thead>
+        <tbody id="portfolioBody">
+          <tr><td colspan="8" class="empty"><div class="empty-icon">📋</div>Portfolio vuoto. Aggiungi prodotti dalla sezione "Aggiungi Prodotto".</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════ MARKET DATABASE ══════════════ -->
+  <div class="section" id="section-market">
+    <div class="sec-header">
+      <div><div class="sec-title">Database Mercati</div><div class="sec-sub">Azioni da 6 borse · ETF per settore · <span id="db-count">—</span> prodotti totali</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterDB('all',this)">Tutti</button>
+      <button class="filter-btn" onclick="filterDB('etf',this)">ETF</button>
+      <button class="filter-btn" onclick="filterDB('Milano',this)">Milano</button>
+      <button class="filter-btn" onclick="filterDB('Francoforte',this)">Francoforte</button>
+      <button class="filter-btn" onclick="filterDB('Parigi',this)">Parigi</button>
+      <button class="filter-btn" onclick="filterDB('Amsterdam',this)">Amsterdam</button>
+      <button class="filter-btn" onclick="filterDB('New York',this)">New York</button>
+      <button class="filter-btn" onclick="filterDB('Londra',this)">Londra</button>
+      <input type="text" class="search-input" id="dbSearch" placeholder="🔍 Cerca azienda, ticker..." oninput="searchDB()">
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="overflow-x:auto;max-height:600px;overflow-y:auto;">
+        <table class="stripe-table" id="dbTable">
+          <thead>
+            <tr>
+              <th>AZIENDA / ETF</th><th>BORSA</th><th>TICKER</th><th>SETTORE</th>
+              <th>PAESE</th><th>DIV. YIELD %</th><th>MKT CAP €bn</th><th>SEGNALE AI</th><th>→ PORTFOLIO</th>
+            </tr>
+          </thead>
+          <tbody id="dbBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SIGNALS ══════════════ -->
+  <div class="section" id="section-signals">
+    <div class="sec-header">
+      <div><div class="sec-title">Segnali AI — Compra / Tieni / Vendi</div><div class="sec-sub">Generati dall'AI sulla base di dati macro, geopolitica e fondamentali · aggiorn. ogni 2h</div></div>
+      <button class="btn-primary" onclick="generateSignals()">⟳ Rigenera Segnali</button>
+    </div>
+
+    <div class="ai-panel">
+      <div class="ai-panel-title">🎯 Segnali di Trading Attivi</div>
+      <div class="ai-panel-sub">Basati su: guerra Iran · riarmo EU · dazi USA · boom AI · tassi BCE/Fed</div>
+      <div class="ai-response" id="ai-signals-text">Premi "Rigenera Segnali" per ottenere segnali operativi aggiornati su tutti i principali temi di mercato.</div>
+      <div class="ai-loading-bar" id="ai-signals-bar"><div class="ai-loading-fill"></div></div>
+    </div>
+
+    <div class="grid-3" id="signals-grid">
+      <div class="card" style="border-top:3px solid var(--green)">
+        <div class="card-title" style="color:var(--green)">🟢 COMPRA Adesso</div>
+        <div id="sig-buy-list" class="card-sub">Premi rigenera...</div>
+      </div>
+      <div class="card" style="border-top:3px solid var(--amber)">
+        <div class="card-title" style="color:var(--amber)">🟡 TIENI / Monitora</div>
+        <div id="sig-hold-list" class="card-sub">Premi rigenera...</div>
+      </div>
+      <div class="card" style="border-top:3px solid var(--red)">
+        <div class="card-title" style="color:var(--red)">🔴 RIDUCI / Vendi</div>
+        <div id="sig-sell-list" class="card-sub">Premi rigenera...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ CHARTS ══════════════ -->
+  <div class="section" id="section-charts">
+    <div class="sec-header"><div><div class="sec-title">Grafici di Mercato</div><div class="sec-sub">Performance comparate · dati indicativi da fonti pubbliche</div></div></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">ETF Difesa EU — Performance YTD 2026</div>
+        <div class="card-sub">Base 100 = Gen 2026</div>
+        <div class="chart-wrap"><canvas id="defenseChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">VanEck Semiconductor — SMH 2025-2026</div>
+        <div class="card-sub">Prezzo mensile USD</div>
+        <div class="chart-wrap"><canvas id="semiChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Confronto Rischio vs Potenziale — Settori</div>
+      <div class="card-sub">Asse X = rischio geopolitico · Asse Y = potenziale crescita 2026</div>
+      <div style="height:260px;position:relative;"><canvas id="bubbleChart"></canvas></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Budget Difesa NATO — % PIL</div>
+        <div class="card-sub">2022-2026 + obiettivo 2035</div>
+        <div class="chart-wrap"><canvas id="natoChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Inflazione Globale — Scenari IMF 2026</div>
+        <div class="card-sub">Base / Avverso / Severo</div>
+        <div class="chart-wrap"><canvas id="inflChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MACRO ══════════════ -->
+  <div class="section" id="section-macro">
+    <div class="sec-header"><div><div class="sec-title">Contesto Macro &amp; Geopolitica</div><div class="sec-sub">4 scenari attivi che impattano il tuo portfolio · maggio 2026</div></div></div>
+
+    <div class="macro-card red-top">
+      <div class="macro-header"><div class="macro-title">⚔️ Guerra USA-Israele vs Iran — Conflitto attivo</div></div>
+      <div class="macro-text">Gas EU +98%. Petrolio volatile. Stretto di Hormuz sotto pressione. IMF: PIL mondiale 3.1% (base) o 2.0% (severo). Inflazione 4.4%. Costo totale stimato >$200 miliardi. Quadruplicazione produzione armamenti USA. Disruption rotte commerciali Asia-Europa via Suez.</div>
+      <div class="macro-impacts">
+        <span class="impact-tag impact-pos">+Difesa EU/USA</span><span class="impact-tag impact-pos">+Energia</span>
+        <span class="impact-tag impact-pos">+Nucleare</span><span class="impact-tag impact-pos">+Agribusiness</span>
+        <span class="impact-tag impact-neg">-Emergenti</span><span class="impact-tag impact-neg">-Aviation</span>
+        <span class="impact-tag impact-neg">-Cina</span><span class="impact-tag impact-neg">-Supply Chain</span>
+      </div>
+    </div>
+
+    <div class="macro-card green-top">
+      <div class="macro-header"><div class="macro-title">🛡️ Riarmo Europeo — Obiettivo NATO 5% PIL entro 2035</div></div>
+      <div class="macro-text">Il piano ReArm Europe mobilita centinaia di miliardi. WisdomTree Europe Defence ETF: $744M raccolti in poche settimane. Rheinmetall, BAE, Thales, Leonardo, Saab sono i principali beneficiari. Crescita contratti armamenti record per 2026-2030. Budget difesa EU quintuplicati rispetto al 2022.</div>
+      <div class="macro-impacts">
+        <span class="impact-tag impact-pos">+Rheinmetall</span><span class="impact-tag impact-pos">+BAE Systems</span>
+        <span class="impact-tag impact-pos">+Leonardo</span><span class="impact-tag impact-pos">+Thales</span>
+        <span class="impact-tag impact-pos">+ETF Difesa</span><span class="impact-tag impact-mix">~Bilancio EU</span>
+      </div>
+    </div>
+
+    <div class="macro-card blue-top">
+      <div class="macro-header"><div class="macro-title">🤖 Boom AI &amp; Semiconductor — Strutturale</div></div>
+      <div class="macro-text">VanEck Semiconductor +48.7% nel 2025, +32% ad aprile 2026 (SMH a $558). Xtrackers AI ETF: €6.6 miliardi AUM. Big Tech confermano crescita investimenti AI. Domanda chip AI raddoppia ogni 12 mesi. Nucleare accelerato dai data center. Qualys beneficia indirettamente dalla cybersecurity.</div>
+      <div class="macro-impacts">
+        <span class="impact-tag impact-pos">+NVDA/TSMC/ASML</span><span class="impact-tag impact-pos">+ETF Semiconductor</span>
+        <span class="impact-tag impact-pos">+Mag7</span><span class="impact-tag impact-pos">+Nucleare</span>
+        <span class="impact-tag impact-neg">-Tensione Taiwan</span>
+      </div>
+    </div>
+
+    <div class="macro-card amber-top">
+      <div class="macro-header"><div class="macro-title">💹 Dazi Trump &amp; Tensioni USA-Cina</div></div>
+      <div class="macro-text">Dazi attivi su beni cinesi, europei e giapponesi. ICBC e tech cinese sotto pressione. Giappone vulnerabile sui dazi auto (Toyota, Honda). ECB ha già tagliato i tassi; Fed in attesa con nuovo presidente. Il dollaro forte penalizza i mercati emergenti globalmente.</div>
+      <div class="macro-impacts">
+        <span class="impact-tag impact-neg">-ICBC China</span><span class="impact-tag impact-neg">-China Tech</span>
+        <span class="impact-tag impact-neg">-BRIC</span><span class="impact-tag impact-neg">-Auto EU/JP</span>
+        <span class="impact-tag impact-mix">~Nikkei</span><span class="impact-tag impact-mix">~MSCI EM</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ ADD PRODUCT ══════════════ -->
+  <div class="section" id="section-add">
+    <div class="sec-header"><div><div class="sec-title">Aggiungi Prodotto al Portfolio</div><div class="sec-sub">Inserisci azioni, ETF, obbligazioni o qualsiasi strumento finanziario</div></div></div>
+
+    <div class="add-form">
+      <div class="add-form-title">📌 Nuovo Strumento</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Nome Prodotto *</label><input class="form-input" id="f-name" placeholder="es. Rheinmetall AG"></div>
+        <div class="form-group"><label class="form-label">Tipo *</label>
+          <select class="form-select" id="f-type">
+            <option value="Azione">Azione</option><option value="ETF">ETF</option>
+            <option value="Obbligazione">Obbligazione</option><option value="ETP Leva">ETP Leva</option>
+            <option value="Commodity">Commodity</option><option value="Altro">Altro</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Ticker</label><input class="form-input" id="f-ticker" placeholder="es. RHM.DE"></div>
+        <div class="form-group"><label class="form-label">Borsa</label>
+          <select class="form-select" id="f-borsa">
+            <option>Milano</option><option>Francoforte</option><option>Parigi</option>
+            <option>Amsterdam</option><option>New York</option><option>Londra</option>
+            <option>NASDAQ</option><option>NYSE</option><option>LSE</option><option>Euronext</option><option>Xetra</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Settore</label>
+          <select class="form-select" id="f-settore">
+            <option>Difesa</option><option>Tecnologia</option><option>Energia</option><option>Finanza</option>
+            <option>Semiconductor</option><option>Intelligenza Artificiale</option><option>Materie Prime</option>
+            <option>Metalli</option><option>Lusso</option><option>Sanità</option><option>Industria</option>
+            <option>Supply Chain</option><option>Commodities</option><option>Altro</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Paese</label>
+          <select class="form-select" id="f-paese">
+            <option>DE</option><option>IT</option><option>FR</option><option>NL</option>
+            <option>UK</option><option>US</option><option>JP</option><option>CN</option><option>Globale</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Prezzo Acquisto</label><input class="form-input" id="f-prezzo" placeholder="es. 452.00 €"></div>
+        <div class="form-group"><label class="form-label">Quantità</label><input class="form-input" id="f-qty" type="number" placeholder="es. 10" min="0"></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Note personali</label><input class="form-input" id="f-note" placeholder="es. Comprato per esposizione al tema difesa EU"></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" onclick="addProduct()">✓ Aggiungi al Portfolio</button>
+        <button class="btn-secondary" onclick="clearForm()">Cancella</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💡 Suggerimenti AI — Cosa Aggiungere</div>
+      <div class="card-sub">L'AI analizza il tuo portfolio e suggerisce prodotti complementari</div>
+      <div class="ai-response" id="ai-suggest-text" style="color:var(--gray-700);min-height:40px;">Aggiungi almeno 2-3 prodotti, poi premi il pulsante per ricevere suggerimenti personalizzati.</div>
+      <div class="ai-loading-bar" id="ai-suggest-bar"><div class="ai-loading-fill"></div></div>
+      <div style="margin-top:10px;">
+        <button class="btn-primary" onclick="getSuggestions()">🤖 Ricevi Suggerimenti AI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SOURCES ══════════════ -->
+  <div class="section" id="section-sources">
+    <div class="sec-header"><div><div class="sec-title">Fonti di Informazione</div><div class="sec-sub">20 fonti internazionali monitorate · alta affidabilità</div></div></div>
+    <div class="source-grid" id="sources-grid"></div>
+  </div>
+
+  <!-- ══════════════ TIMELINE ══════════════ -->
+  <div class="section" id="section-timeline">
+    <div class="sec-header">
+      <div><div class="sec-title">Timeline Notizie Chiave</div><div class="sec-sub">Eventi che hanno impattato i mercati · 2025-2026</div></div>
+      <button class="btn-primary" onclick="askAI('timeline','Elenca le 8 notizie finanziarie e geopolitiche più importanti degli ultimi 30 giorni che impattano i mercati europei e americani. Per ognuna: data, titolo, impatto su quali settori/titoli. Formato: lista numerata, italiano, conciso.')">⟳ Aggiorna da AI</button>
+    </div>
+    <div class="card" style="padding:24px 28px;">
+      <div class="ai-response" id="ai-timeline-text" style="color:var(--gray-700);min-height:40px;display:none;"></div>
+      <div class="ai-loading-bar" id="ai-timeline-bar"><div class="ai-loading-fill"></div></div>
+      <div class="timeline" id="timeline-static">
+        <div class="timeline-item"><div class="tl-dot red"></div><div class="tl-date">Maggio 2026 — In corso</div><div class="tl-title">Guerra USA-Israele vs Iran: stretto di Hormuz sotto pressione</div><div class="tl-body">Gas EU +98%. Petrolio volatile. Budget difesa mondiali in espansione record. IMF taglia PIL a 3.1%. Inflazione 4.4%.</div></div>
+        <div class="timeline-item"><div class="tl-dot green"></div><div class="tl-date">Aprile 2026</div><div class="tl-title">VanEck Semiconductor +32% in un mese — SMH raggiunge $558</div><div class="tl-body">Rally esplosivo post-crollo di marzo. Big Tech confermano investimenti AI in forte crescita. OPEC+ aumenta produzione per contenere il petrolio.</div></div>
+        <div class="timeline-item"><div class="tl-dot green"></div><div class="tl-date">Aprile 2026</div><div class="tl-title">Qualys Q1 2026: guidance alzata a $721-727M — revenue +10% YoY</div><div class="tl-body">EBITDA margin 47%. AI-native risk management in forte adozione. Titolo +3.1% dopo pubblicazione risultati.</div></div>
+        <div class="timeline-item"><div class="tl-dot red"></div><div class="tl-date">Marzo 2026</div><div class="tl-title">Inizio conflitto militare USA-Israele vs Iran</div><div class="tl-body">Attacchi israeliani e americani sull'Iran. Risposta iraniana su basi USA nel Golfo. Volatilità estrema. Difesa vola, semiconductor crollano poi recuperano.</div></div>
+        <div class="timeline-item"><div class="tl-dot amber"></div><div class="tl-date">Feb-Mar 2026</div><div class="tl-title">WisdomTree Europe Defence ETF: $744M raccolti in poche settimane</div><div class="tl-body">Primo ETF puro sulla difesa europea. HANetf lancia ARMY. Amundi riceve il via libera. Rheinmetall +>20% in 2 settimane.</div></div>
+        <div class="timeline-item"><div class="tl-dot blue"></div><div class="tl-date">Febbraio 2026</div><div class="tl-title">Trump sospende aiuti militari Ucraina — riarmo EU si accelera</div><div class="tl-body">Leaders europei dichiarano autonomia strategica. Annunciato obiettivo NATO 5% PIL/2035. Rheinmetall, BAE, Leonardo +20%.</div></div>
+        <div class="timeline-item"><div class="tl-dot green"></div><div class="tl-date">Gennaio 2026</div><div class="tl-title">VanEck Semiconductor +48.7% nel 2025 — ai massimi storici</div><div class="tl-body">AI boom quasi triplica performance S&P 500 nel settore chip. SMH entra nel 2026 con momentum fortissimo.</div></div>
+        <div class="timeline-item"><div class="tl-dot blue"></div><div class="tl-date">Ott 2024</div><div class="tl-title">Lancio Xtrackers AI &amp; Big Data ETF (XAIX) — €6.6 miliardi AUM</div><div class="tl-body">Nuovo ETF DWS/Xtrackers sull'AI. Fortemente esposto a Mag7. Expense ratio 0.35%.</div></div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /content -->
+</main>
+</div><!-- /layout -->
+
+<!-- MODAL DETTAGLIO -->
+<div class="modal-overlay" id="detailOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-header">
+      <div class="modal-name" id="mod-name">—</div>
+      <div class="modal-meta" id="mod-meta">—</div>
+    </div>
+    <div class="modal-body" id="mod-stats"></div>
+    <div class="modal-section-title">SITUAZIONE ATTUALE</div>
+    <div class="modal-text" id="mod-situation">—</div>
+    <div class="modal-section-title">QUANDO AGIRE</div>
+    <div class="trigger-grid" id="mod-triggers"></div>
+    <div class="modal-ai-section">
+      <div class="modal-ai-title">🤖 ANALISI AI IN TEMPO REALE</div>
+      <div class="modal-ai-text" id="mod-ai-text">Premi per analizzare questo prodotto specifico.</div>
+      <div style="margin-top:10px;"><button class="ai-action-btn" onclick="analyzeProduct()">Analizza con AI →</button></div>
+    </div>
+    <div class="modal-section-title">ANDAMENTO INDICATIVO YTD 2026</div>
+    <div class="modal-chart-wrap"><canvas id="modalChart"></canvas></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════
+const ETF_DATA = [
+  {tipo:'ETF',nome:'Sample Difesa ETF 1',ticker:'DIF1',borsa:'NASDAQ',settore:'Difesa',area:'EU',ter:0.34,leva:2,paese:'EU',div:null,cap:null,sig:'buy',score:8},
+  {tipo:'ETF',nome:'Sample Difesa ETF 2',ticker:'DIF2',borsa:'Euronext',settore:'Difesa',area:'USA',ter:0.77,leva:2,paese:'USA',div:null,cap:null,sig:'buy',score:8},
+  {tipo:'ETF',nome:'Sample Difesa ETF 3',ticker:'DIF3',borsa:'Euronext',settore:'Difesa',area:'Global',ter:0.42,leva:3,paese:'Global',div:null,cap:null,sig:'buy',score:7},
+  {tipo:'ETF',nome:'Sample Difesa ETF 4',ticker:'DIF4',borsa:'LSE',settore:'Difesa',area:'Global',ter:0.85,leva:3,paese:'Global',div:null,cap:null,sig:'buy',score:7},
+  {tipo:'ETF',nome:'Sample Difesa ETF 5',ticker:'DIF5',borsa:'LSE',settore:'Difesa',area:'USA',ter:0.30,leva:3,paese:'USA',div:null,cap:null,sig:'buy',score:8},
+  {tipo:'ETF',nome:'Sample Difesa ETF 6',ticker:'DIF6',borsa:'Borsa Italiana',settore:'Difesa',area:'EU',ter:0.49,leva:0,paese:'EU',div:null,cap:null,sig:'buy',score:7},
+  {tipo:'ETF',nome:'Sample Difesa ETF 7',ticker:'DIF7',borsa:'Xetra',settore:'Difesa',area:'EU',ter:0.37,leva:2,paese:'EU',div:null,cap:null,sig:'buy',score:8},
+  {tipo:'ETF',nome:'Sample Difesa ETF 8',ticker:'DIF8',borsa:'Euronext',settore:'Difesa',area:'Global',ter:0.23,leva:0,paese:'Global',div:null,cap:null,sig:'buy',score:8},
+  {tipo:'ETF',nome:'Sample Materie Prime ETF 1',ticker:'MAT1',borsa:'Borsa Italiana',settore:'Materie Prime',area:'Global',ter:0.73,leva:0,paese:'Global',div:null,cap:null,sig:'hold',score:5},
+  {tipo:'ETF',nome:'Sample Semiconductor ETF 1',ticker:'SEM1',borsa:'Euronext',settore:'Semiconductor',area:'USA',ter:0.57,leva:3,paese:'USA',div:null,cap:null,sig:'buy',score:9},
+  {tipo:'ETF',nome:'Sample Semiconductor ETF 2',ticker:'SEM2',borsa:'LSE',settore:'Semiconductor',area:'USA',ter:0.21,leva:0,paese:'USA',div:null,cap:null,sig:'buy',score:9},
+  {tipo:'ETF',nome:'Sample Tecnologia ETF 1',ticker:'TEC1',borsa:'Xetra',settore:'Tecnologia',area:'Global',ter:0.79,leva:2,paese:'Global',div:null,cap:null,sig:'buy',score:8},
+  {tipo:'ETF',nome:'Sample AI ETF 1',ticker:'INT1',borsa:'NASDAQ',settore:'Intelligenza Artificiale',area:'USA',ter:0.25,leva:0,paese:'USA',div:null,cap:null,sig:'buy',score:9},
+  {tipo:'ETF',nome:'Sample Energia ETF 1',ticker:'ENE1',borsa:'Borsa Italiana',settore:'Energia',area:'Global',ter:0.40,leva:3,paese:'Global',div:null,cap:null,sig:'buy',score:7},
+  {tipo:'ETF',nome:'Sample Supply Chain ETF 1',ticker:'SUP1',borsa:'LSE',settore:'Supply Chain',area:'EU',ter:0.85,leva:0,paese:'EU',div:null,cap:null,sig:'hold',score:5},
+  {tipo:'ETF',nome:'Sample Commodities ETF 1',ticker:'COM1',borsa:'NYSE',settore:'Commodities',area:'USA',ter:0.70,leva:0,paese:'USA',div:null,cap:null,sig:'hold',score:6},
+  {tipo:'ETF',nome:'Sample Metalli ETF 1',ticker:'MET1',borsa:'LSE',settore:'Metalli',area:'Global',ter:0.88,leva:2,paese:'Global',div:null,cap:null,sig:'hold',score:5},
+];
+
+const STOCK_DATA = [
+  // Milano
+  {tipo:'Azione',nome:'Enel',ticker:'ENEL.MI',borsa:'Milano',settore:'Energia',paese:'IT',div:3.8,cap:65,sig:'hold',score:5},
+  {tipo:'Azione',nome:'Eni',ticker:'ENI.MI',borsa:'Milano',settore:'Energia',paese:'IT',div:5.1,cap:44,sig:'buy',score:7},
+  {tipo:'Azione',nome:'Intesa Sanpaolo',ticker:'ISP.MI',borsa:'Milano',settore:'Finanza',paese:'IT',div:8.2,cap:62,sig:'hold',score:6},
+  {tipo:'Azione',nome:'UniCredit',ticker:'UCG.MI',borsa:'Milano',settore:'Finanza',paese:'IT',div:6.4,cap:54,sig:'hold',score:6},
+  {tipo:'Azione',nome:'Ferrari',ticker:'RACE.MI',borsa:'Milano',settore:'Lusso',paese:'IT',div:0.6,cap:58,sig:'hold',score:6},
+  {tipo:'Azione',nome:'Leonardo',ticker:'LDO.MI',borsa:'Milano',settore:'Difesa',paese:'IT',div:1.8,cap:22,sig:'buy',score:9},
+  {tipo:'Azione',nome:'Stellantis',ticker:'STLAM.MI',borsa:'Milano',settore:'Industria',paese:'NL',div:5.5,cap:11,sig:'sell',score:3},
+  {tipo:'Azione',nome:'Prysmian',ticker:'PRY.MI',borsa:'Milano',settore:'Industria',paese:'IT',div:1.3,cap:19,sig:'buy',score:7},
+  {tipo:'Azione',nome:'Moncler',ticker:'MONC.MI',borsa:'Milano',settore:'Lusso',paese:'IT',div:1.2,cap:15,sig:'hold',score:5},
+  {tipo:'Azione',nome:'Generali',ticker:'G.MI',borsa:'Milano',settore:'Finanza',paese:'IT',div:5.8,cap:40,sig:'hold',score:6},
+  // Francoforte
+  {tipo:'Azione',nome:'SAP',ticker:'SAP.DE',borsa:'Francoforte',settore:'Tecnologia',paese:'DE',div:0.7,cap:280,sig:'buy',score:8},
+  {tipo:'Azione',nome:'Siemens',ticker:'SIE.DE',borsa:'Francoforte',settore:'Industria',paese:'DE',div:3.2,cap:120,sig:'hold',score:6},
+  {tipo:'Azione',nome:'Allianz',ticker:'ALV.DE',borsa:'Francoforte',settore:'Finanza',paese:'DE',div:4.8,cap:105,sig:'hold',score:6},
+  {tipo:'Azione',nome:'BASF',ticker:'BAS.DE',borsa:'Francoforte',settore:'Industria',paese:'DE',div:4.3,cap:23,sig:'sell',score:3},
+  {tipo:'Azione',nome:'Mercedes-Benz',ticker:'MBG.DE',borsa:'Francoforte',settore:'Industria',paese:'DE',div:8.3,cap:52,sig:'sell',score:3},
+  {tipo:'Azione',nome:'BMW',ticker:'BMW.DE',borsa:'Francoforte',settore:'Industria',paese:'DE',div:6.7,cap:42,sig:'sell',score:3},
+  {tipo:'Azione',nome:'Rheinmetall',ticker:'RHM.DE',borsa:'Francoforte',settore:'Difesa',paese:'DE',div:1.2,cap:32,sig:'buy',score:10},
+  {tipo:'Azione',nome:'Adidas',ticker:'ADS.DE',borsa:'Francoforte',settore:'Lusso',paese:'DE',div:1.5,cap:38,sig:'hold',score:5},
+  {tipo:'Azione',nome:'Infineon',ticker:'IFX.DE',borsa:'Francoforte',settore:'Semiconductor',paese:'DE',div:2.1,cap:28,sig:'buy',score:8},
+  // Parigi
+  {tipo:'Azione',nome:'LVMH',ticker:'MC.PA',borsa:'Parigi',settore:'Lusso',paese:'FR',div:2.4,cap:290,sig:'hold',score:5},
+  {tipo:'Azione',nome:'TotalEnergies',ticker:'TTE.PA',borsa:'Parigi',settore:'Energia',paese:'FR',div:5.3,cap:130,sig:'buy',score:7},
+  {tipo:'Azione',nome:'Schneider Electric',ticker:'SU.PA',borsa:'Parigi',settore:'Industria',paese:'FR',div:1.4,cap:110,sig:'buy',score:8},
+  {tipo:'Azione',nome:'Airbus',ticker:'AIR.PA',borsa:'Parigi',settore:'Difesa',paese:'NL',div:1.0,cap:115,sig:'buy',score:9},
+  {tipo:'Azione',nome:'Sanofi',ticker:'SAN.PA',borsa:'Parigi',settore:'Sanità',paese:'FR',div:3.2,cap:122,sig:'hold',score:6},
+  {tipo:'Azione',nome:'BNP Paribas',ticker:'BNP.PA',borsa:'Parigi',settore:'Finanza',paese:'FR',div:5.9,cap:65,sig:'hold',score:6},
+  {tipo:'Azione',nome:'Hermes',ticker:'RMS.PA',borsa:'Parigi',settore:'Lusso',paese:'FR',div:0.5,cap:195,sig:'hold',score:5},
+  {tipo:'Azione',nome:'Dassault Systemes',ticker:'DSY.PA',borsa:'Parigi',settore:'Tecnologia',paese:'FR',div:0.6,cap:24,sig:'hold',score:6},
+  {tipo:'Azione',nome:'AXA',ticker:'CS.PA',borsa:'Parigi',settore:'Finanza',paese:'FR',div:5.3,cap:72,sig:'hold',score:6},
+  // Amsterdam
+  {tipo:'Azione',nome:'ASML',ticker:'ASML.AS',borsa:'Amsterdam',settore:'Semiconductor',paese:'NL',div:0.9,cap:310,sig:'buy',score:9},
+  {tipo:'Azione',nome:'Adyen',ticker:'ADYEN.AS',borsa:'Amsterdam',settore:'Finanza',paese:'NL',div:0.0,cap:44,sig:'hold',score:5},
+  {tipo:'Azione',nome:'ING',ticker:'INGA.AS',borsa:'Amsterdam',settore:'Finanza',paese:'NL',div:7.8,cap:48,sig:'hold',score:6},
+  {tipo:'Azione',nome:'Philips',ticker:'PHIA.AS',borsa:'Amsterdam',settore:'Sanità',paese:'NL',div:1.2,cap:11,sig:'hold',score:5},
+  // New York
+  {tipo:'Azione',nome:'Apple',ticker:'AAPL',borsa:'New York',settore:'Tecnologia',paese:'US',div:0.5,cap:2900,sig:'buy',score:8},
+  {tipo:'Azione',nome:'Microsoft',ticker:'MSFT',borsa:'New York',settore:'Tecnologia',paese:'US',div:0.7,cap:3100,sig:'buy',score:9},
+  {tipo:'Azione',nome:'Nvidia',ticker:'NVDA',borsa:'New York',settore:'Semiconductor',paese:'US',div:0.02,cap:2800,sig:'buy',score:10},
+  {tipo:'Azione',nome:'Amazon',ticker:'AMZN',borsa:'New York',settore:'Tecnologia',paese:'US',div:0.0,cap:1800,sig:'buy',score:8},
+  {tipo:'Azione',nome:'Alphabet',ticker:'GOOGL',borsa:'New York',settore:'Tecnologia',paese:'US',div:0.0,cap:1900,sig:'buy',score:8},
+  {tipo:'Azione',nome:'Meta',ticker:'META',borsa:'New York',settore:'Tecnologia',paese:'US',div:0.4,cap:1300,sig:'buy',score:8},
+  {tipo:'Azione',nome:'Tesla',ticker:'TSLA',borsa:'New York',settore:'Industria',paese:'US',div:0.0,cap:650,sig:'sell',score:4},
+  {tipo:'Azione',nome:'JPMorgan',ticker:'JPM',borsa:'New York',settore:'Finanza',paese:'US',div:2.2,cap:620,sig:'hold',score:6},
+  {tipo:'Azione',nome:'Exxon Mobil',ticker:'XOM',borsa:'New York',settore:'Energia',paese:'US',div:3.5,cap:490,sig:'buy',score:7},
+  {tipo:'Azione',nome:'Lockheed Martin',ticker:'LMT',borsa:'New York',settore:'Difesa',paese:'US',div:2.8,cap:110,sig:'buy',score:9},
+  // Londra
+  {tipo:'Azione',nome:'HSBC',ticker:'HSBA.L',borsa:'Londra',settore:'Finanza',paese:'UK',div:6.1,cap:148,sig:'hold',score:6},
+  {tipo:'Azione',nome:'Shell',ticker:'SHEL.L',borsa:'Londra',settore:'Energia',paese:'UK',div:4.2,cap:195,sig:'buy',score:7},
+  {tipo:'Azione',nome:'BP',ticker:'BP.L',borsa:'Londra',settore:'Energia',paese:'UK',div:5.4,cap:72,sig:'buy',score:7},
+  {tipo:'Azione',nome:'AstraZeneca',ticker:'AZN.L',borsa:'Londra',settore:'Sanità',paese:'UK',div:2.1,cap:220,sig:'hold',score:6},
+  {tipo:'Azione',nome:'Unilever',ticker:'ULVR.L',borsa:'Londra',settore:'Industria',paese:'UK',div:3.7,cap:115,sig:'hold',score:5},
+  {tipo:'Azione',nome:'Rio Tinto',ticker:'RIO.L',borsa:'Londra',settore:'Materie Prime',paese:'AU',div:6.8,cap:98,sig:'hold',score:5},
+  {tipo:'Azione',nome:'Rolls-Royce',ticker:'RR.L',borsa:'Londra',settore:'Difesa',paese:'UK',div:1.1,cap:58,sig:'buy',score:8},
+  {tipo:'Azione',nome:'BAE Systems',ticker:'BA.L',borsa:'Londra',settore:'Difesa',paese:'UK',div:2.3,cap:39,sig:'buy',score:9},
+  {tipo:'Azione',nome:'Barclays',ticker:'BARC.L',borsa:'Londra',settore:'Finanza',paese:'UK',div:3.8,cap:42,sig:'hold',score:5},
+  {tipo:'Azione',nome:'Diageo',ticker:'DGE.L',borsa:'Londra',settore:'Industria',paese:'UK',div:3.2,cap:52,sig:'hold',score:5},
+];
+
+const ALL_PRODUCTS = [...ETF_DATA, ...STOCK_DATA];
+
+const SOURCES = [
+  {name:'Financial Times',country:'UK',type:'Newspaper',focus:'Global Finance & Economics',importance:'High',cat:'Analysis'},
+  {name:'The Economist',country:'UK',type:'Magazine',focus:'Global Economics & Politics',importance:'High',cat:'Analysis'},
+  {name:'Reuters',country:'Global',type:'News Agency',focus:'Markets & Economy',importance:'High',cat:'Real-time'},
+  {name:'Bloomberg',country:'USA',type:'Media',focus:'Finance & Markets',importance:'High',cat:'Real-time'},
+  {name:'CNBC',country:'USA',type:'Media',focus:'Markets & Business',importance:'High',cat:'Real-time'},
+  {name:'Wall Street Journal',country:'USA',type:'Newspaper',focus:'Finance & Economy',importance:'High',cat:'Analysis'},
+  {name:"Barron's",country:'USA',type:'Magazine',focus:'Investing',importance:'High',cat:'Analysis'},
+  {name:'Nikkei Asia',country:'Japan',type:'Newspaper',focus:'Asian Economy',importance:'High',cat:'Analysis'},
+  {name:'South China Morning Post',country:'Hong Kong',type:'Newspaper',focus:'China Economy',importance:'High',cat:'Analysis'},
+  {name:'Caixin Global',country:'China',type:'Media',focus:'Chinese Economy',importance:'High',cat:'Analysis'},
+  {name:'MarketWatch',country:'USA',type:'Website',focus:'Markets',importance:'Medium',cat:'Signals'},
+  {name:'Business Insider',country:'USA',type:'Website',focus:'Business & Trends',importance:'Medium',cat:'Signals'},
+  {name:'Forbes',country:'USA',type:'Magazine',focus:'Finance',importance:'Medium',cat:'Signals'},
+  {name:'The Economic Times',country:'India',type:'Newspaper',focus:'Economy',importance:'Medium',cat:'Analysis'},
+  {name:'LiveMint',country:'India',type:'Website',focus:'Finance',importance:'Medium',cat:'Signals'},
+  {name:'Politico Europe',country:'EU',type:'Media',focus:'Politics & Economy',importance:'High',cat:'Policy'},
+  {name:'IMF',country:'Global',type:'Organization',focus:'Macro Economics',importance:'High',cat:'Policy'},
+  {name:'World Bank',country:'Global',type:'Organization',focus:'Global Economy',importance:'High',cat:'Policy'},
+  {name:'OECD',country:'Global',type:'Organization',focus:'Economic Policy',importance:'High',cat:'Policy'},
+  {name:'BIS',country:'Global',type:'Organization',focus:'Central Banking',importance:'High',cat:'Policy'},
+];
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let portfolio = JSON.parse(localStorage.getItem('portfolio') || '[]');
+let currentProduct = null;
+let modalChartInst = null;
+let dbFilter = 'all';
+let dbSearch = '';
+let autoRefreshTimer = null;
+const REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 hours
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+window.onload = function() {
+  updateClock();
+  setInterval(updateClock, 30000);
+  updateKPIs();
+  renderSources();
+  renderDB(ALL_PRODUCTS);
+  renderPortfolio();
+  initCharts();
+  scheduleAutoRefresh();
+  setLastRefresh();
+  updateNavCounts();
+};
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleDateString('it-IT') + ' ' + now.toTimeString().slice(0,5);
+}
+
+function setLastRefresh() {
+  const now = new Date();
+  document.getElementById('last-refresh').textContent =
+    'Agg: ' + now.toTimeString().slice(0,5);
+  document.getElementById('ai-last-update').textContent =
+    now.toLocaleDateString('it-IT') + ' ' + now.toTimeString().slice(0,5);
+}
+
+function scheduleAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(() => {
+    runAIRefresh();
+  }, REFRESH_INTERVAL);
+}
+
+function updateKPIs() {
+  const all = ALL_PRODUCTS.length + portfolio.length;
+  const buys = ALL_PRODUCTS.filter(p=>p.sig==='buy').length;
+  const holds = ALL_PRODUCTS.filter(p=>p.sig==='hold').length;
+  const sells = ALL_PRODUCTS.filter(p=>p.sig==='sell').length;
+  document.getElementById('kpi-total').textContent = all;
+  document.getElementById('kpi-buy').textContent = buys;
+  document.getElementById('kpi-hold').textContent = holds;
+  document.getElementById('kpi-sell').textContent = sells;
+  document.getElementById('nc-total').textContent = all;
+}
+
+function updateNavCounts() {
+  const buys = ALL_PRODUCTS.filter(p=>p.sig==='buy').length + portfolio.filter(p=>p.sig==='buy').length;
+  document.getElementById('nc-buy').textContent = buys;
+  document.getElementById('nc-port').textContent = portfolio.length;
+  document.getElementById('port-count').textContent = portfolio.length;
+}
+
+// ═══════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════
+const pageTitles = {overview:'Overview Portfolio',portfolio:'Il Mio Portfolio',market:'Database Mercati',signals:'Segnali AI',charts:'Grafici di Mercato',macro:'Macro & Geopolitica',add:'Aggiungi Prodotto',sources:'Fonti di Informazione',timeline:'Timeline Notizie'};
+
+function nav(id, btn) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  document.getElementById('page-title').textContent = pageTitles[id] || id;
+  if (btn) btn.classList.add('active');
+  else {
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+id+"'")) b.classList.add('active');
+    });
+  }
+  if (id === 'charts') setTimeout(initCharts, 50);
+  if (id === 'db-count') document.getElementById('db-count').textContent = ALL_PRODUCTS.length;
+}
+
+// ═══════════════════════════════════════════════
+//  DB TABLE
+// ═══════════════════════════════════════════════
+function renderDB(data) {
+  document.getElementById('db-count').textContent = data.length;
+  const tbody = document.getElementById('dbBody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty"><div class="empty-icon">🔍</div>Nessun risultato</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(p => {
+    const sc = p.score>=8?'high':p.score>=5?'mid':'low';
+    const sg = p.sig==='buy'?'badge-buy':p.sig==='sell'?'badge-sell':'badge-hold';
+    const sl = p.sig==='buy'?'▲ Compra':p.sig==='sell'?'▼ Riduci':'■ Tieni';
+    const div = p.div != null ? p.div.toFixed(2)+'%' : '—';
+    const cap = p.cap != null ? p.cap+'bn' : '—';
+    return `<tr onclick="openModal(ALL_PRODUCTS.find(x=>x.ticker==='${p.ticker}'))">
+      <td><strong>${p.nome}</strong></td>
+      <td><span class="badge badge-blue">${p.tipo}</span></td>
+      <td><span class="ticker">${p.ticker}</span></td>
+      <td>${p.settore}</td>
+      <td><span class="badge badge-gray">${p.paese||'—'}</span></td>
+      <td>${div}</td>
+      <td>${cap}</td>
+      <td><span class="badge ${sg}">${sl}</span></td>
+      <td><button class="btn-secondary" style="font-size:11px;padding:3px 8px;" onclick="event.stopPropagation();addFromDB(ALL_PRODUCTS.find(x=>x.ticker==='${p.ticker}'))">+ Portfolio</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterDB(f, btn) {
+  dbFilter = f;
+  if (btn) { document.querySelectorAll('#section-market .filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+  applyDBFilter();
+}
+function searchDB() { dbSearch = document.getElementById('dbSearch').value.toLowerCase(); applyDBFilter(); }
+function applyDBFilter() {
+  let data = ALL_PRODUCTS;
+  if (dbFilter !== 'all') data = data.filter(p => p.tipo === 'ETF' ? dbFilter==='etf' : p.borsa === dbFilter);
+  if (dbSearch) data = data.filter(p => p.nome.toLowerCase().includes(dbSearch) || p.ticker.toLowerCase().includes(dbSearch) || p.settore.toLowerCase().includes(dbSearch));
+  renderDB(data);
+}
+
+function addFromDB(p) {
+  if (!p) return;
+  if (portfolio.find(x=>x.ticker===p.ticker)) { showToast('Prodotto già nel portfolio!'); return; }
+  portfolio.push({...p, note:'Aggiunto da database', qty:0, prezzo:''});
+  savePortfolio();
+  renderPortfolio();
+  showToast('✓ '+p.nome+' aggiunto al portfolio!');
+  updateNavCounts();
+}
+
+// ═══════════════════════════════════════════════
+//  PORTFOLIO
+// ═══════════════════════════════════════════════
+function renderPortfolio() {
+  document.getElementById('port-count').textContent = portfolio.length;
+  document.getElementById('nc-port').textContent = portfolio.length;
+  const tbody = document.getElementById('portfolioBody');
+  if (!portfolio.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty"><div class="empty-icon">📋</div>Portfolio vuoto. Aggiungi prodotti dalla sezione "Aggiungi Prodotto".</td></tr>';
+    return;
+  }
+  tbody.innerHTML = portfolio.map((p,i) => {
+    const sc = p.score>=8?'high':p.score>=5?'mid':'low';
+    const sg = p.sig==='buy'?'badge-buy':p.sig==='sell'?'badge-sell':'badge-hold';
+    const sl = p.sig==='buy'?'▲ Compra':p.sig==='sell'?'▼ Riduci':'■ Tieni';
+    return `<tr onclick="openModal(portfolio[${i}])">
+      <td><strong>${p.nome}</strong><br><span class="ticker">${p.ticker||'—'}</span></td>
+      <td><span class="badge badge-blue">${p.tipo}</span></td>
+      <td>${p.borsa||'—'}</td>
+      <td>${p.settore||'—'}</td>
+      <td><span class="badge ${sg}">${sl}</span></td>
+      <td><span class="score ${sc}">${p.score||'?'}</span></td>
+      <td style="max-width:160px;font-size:11px;color:var(--gray-500)">${p.note||'—'}</td>
+      <td><button class="btn-danger" onclick="event.stopPropagation();removeFromPortfolio(${i})">✕ Rimuovi</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function savePortfolio() {
+  localStorage.setItem('portfolio', JSON.stringify(portfolio));
+}
+
+function removeFromPortfolio(i) {
+  const name = portfolio[i].nome;
+  portfolio.splice(i,1);
+  savePortfolio();
+  renderPortfolio();
+  showToast('✓ '+name+' rimosso dal portfolio');
+  updateNavCounts();
+}
+
+// ═══════════════════════════════════════════════
+//  ADD FORM
+// ═══════════════════════════════════════════════
+function addProduct() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('⚠ Inserisci il nome del prodotto!'); return; }
+  const prod = {
+    nome: name,
+    tipo: document.getElementById('f-type').value,
+    ticker: document.getElementById('f-ticker').value.trim() || '—',
+    borsa: document.getElementById('f-borsa').value,
+    settore: document.getElementById('f-settore').value,
+    paese: document.getElementById('f-paese').value,
+    prezzo: document.getElementById('f-prezzo').value.trim(),
+    qty: parseFloat(document.getElementById('f-qty').value) || 0,
+    note: document.getElementById('f-note').value.trim(),
+    sig: 'hold', score: 5, div: null, cap: null,
+    addedAt: new Date().toISOString()
+  };
+  if (portfolio.find(x=>x.ticker===prod.ticker && prod.ticker!=='—')) {
+    showToast('Prodotto già nel portfolio!'); return;
+  }
+  portfolio.push(prod);
+  savePortfolio();
+  renderPortfolio();
+  clearForm();
+  showToast('✓ '+name+' aggiunto al portfolio!');
+  updateNavCounts();
+  nav('portfolio', null);
+}
+
+function clearForm() {
+  ['f-name','f-ticker','f-prezzo','f-note'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('f-qty').value='';
+}
+
+// ═══════════════════════════════════════════════
+//  SOURCES
+// ═══════════════════════════════════════════════
+function renderSources() {
+  const catColors = {'Real-time':'#2563eb','Analysis':'#16a34a','Policy':'#d97706','Signals':'#6b7280'};
+  document.getElementById('sources-grid').innerHTML = SOURCES.map(s => `
+    <div class="source-card">
+      <div class="source-name">${s.name}</div>
+      <div class="source-meta">${s.country} · ${s.type}</div>
+      <div class="source-meta" style="margin-top:2px;font-size:11px;">${s.focus}</div>
+      <span class="source-type" style="background:${(catColors[s.cat]||'#2563eb')}20;color:${catColors[s.cat]||'#2563eb'}">${s.cat}</span>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════
+function openModal(p) {
+  if (!p) return;
+  currentProduct = p;
+  document.getElementById('mod-name').textContent = p.nome;
+  const sg = p.sig==='buy'?'badge-buy':p.sig==='sell'?'badge-sell':'badge-hold';
+  const sl = p.sig==='buy'?'▲ COMPRA':p.sig==='sell'?'▼ RIDUCI':'■ TIENI';
+  document.getElementById('mod-meta').innerHTML = `
+    <span class="badge ${sg}">${sl}</span>
+    <span class="badge badge-blue">${p.tipo}</span>
+    <span class="ticker">${p.ticker}</span>
+    <span class="badge badge-gray">${p.borsa}</span>
+    <span class="badge badge-gray">${p.settore}</span>
+  `;
+  const scoreClass = p.score>=8?'high':p.score>=5?'mid':'low';
+  document.getElementById('mod-stats').innerHTML = `
+    <div class="modal-stat"><div class="modal-stat-label">Div. Yield</div><div class="modal-stat-value">${p.div!=null?p.div.toFixed(2)+'%':'—'}</div></div>
+    <div class="modal-stat"><div class="modal-stat-label">Market Cap</div><div class="modal-stat-value">${p.cap!=null?p.cap+'bn€':'—'}</div></div>
+    <div class="modal-stat"><div class="modal-stat-label">Score AI (0-10)</div><div class="modal-stat-value"><span class="score ${scoreClass}">${p.score||'?'}</span></div></div>
+    <div class="modal-stat"><div class="modal-stat-label">Borsa</div><div class="modal-stat-value" style="font-size:14px;">${p.borsa}</div></div>
+    <div class="modal-stat"><div class="modal-stat-label">Paese</div><div class="modal-stat-value" style="font-size:14px;">${p.paese||'—'}</div></div>
+    <div class="modal-stat"><div class="modal-stat-label">Tipo</div><div class="modal-stat-value" style="font-size:14px;">${p.tipo}</div></div>
+  `;
+  document.getElementById('mod-situation').textContent = getSituation(p);
+  document.getElementById('mod-triggers').innerHTML = `
+    <div class="trig-col buy"><div class="trig-title buy">🟢 Compra quando</div>${getTriggers(p,'buy').map(t=>'<div class="trig-item">'+t+'</div>').join('')}</div>
+    <div class="trig-col hold"><div class="trig-title hold">🟡 Tieni se</div>${getTriggers(p,'hold').map(t=>'<div class="trig-item">'+t+'</div>').join('')}</div>
+    <div class="trig-col sell"><div class="trig-title sell">🔴 Riduci se</div>${getTriggers(p,'sell').map(t=>'<div class="trig-item">'+t+'</div>').join('')}</div>
+  `;
+  document.getElementById('mod-ai-text').textContent = 'Premi "Analizza con AI" per un\'analisi aggiornata.';
+  if (modalChartInst) { modalChartInst.destroy(); modalChartInst = null; }
+  const perfData = getPerfData(p);
+  const color = p.sig==='buy'?'#16a34a':p.sig==='sell'?'#dc2626':'#d97706';
+  modalChartInst = new Chart(document.getElementById('modalChart'), {
+    type:'line',
+    data:{labels:['Gen','Feb','Mar','Apr','Mag'],datasets:[{data:perfData,borderColor:color,tension:0.4,borderWidth:2.5,pointRadius:4,pointBackgroundColor:color,fill:true,backgroundColor:color.replace('#','rgba(').replace(/(.{2})(.{2})(.{2})$/,'$1,$2,$3').replace('rgba(','rgba(').replace('rgba(','rgba(')+'0.08)'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:11}}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:11}}}}}
+  });
+  document.getElementById('detailOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function closeModal() {
+  document.getElementById('detailOverlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+function analyzeProduct() {
+  if (!currentProduct) return;
+  const p = currentProduct;
+  const prompt = `Analizza questo prodotto finanziario in italiano in 150 parole max: ${p.nome} (${p.ticker}), settore ${p.settore}, borsa ${p.borsa}, paese ${p.paese}. Segnale attuale: ${p.sig}. Considerando la situazione macro attuale (guerra Iran, riarmo EU, dazi USA, boom AI), fornisci: 1) Situazione attuale 2) Cosa potrebbe farlo salire 3) Principali rischi 4) Suggerimento operativo (compra/tieni/riduci). Risposta in italiano, formato conciso.`;
+  callAI(prompt, 'mod-ai-text', null);
+}
+
+function getSituation(p) {
+  const situations = {
+    'Difesa': 'Beneficia direttamente dalla guerra Iran e dal riarmo europeo (NATO 5% PIL/2035). Contratti in forte crescita. Pipeline record per 2026-2030.',
+    'Semiconductor': 'Core del boom AI. Rally esplosivo nel 2026. NVDA, TSMC, ASML trainano il settore. Rischio principale: tensioni su Taiwan.',
+    'Intelligenza Artificiale': 'Tema strutturale decennale. Big Tech confermano investimenti crescenti. Domanda AI raddoppia ogni 12 mesi.',
+    'Tecnologia': 'Beneficia del boom AI. Cloud, software e cybersecurity in forte crescita. Rischio: valutazioni elevate.',
+    'Energia': 'Guerra Iran ha fatto impennare gas EU +98%. Major energetiche con utili record. Rischio: risoluzione rapida del conflitto.',
+    'Finanza': 'BCE ha tagliato i tassi. Margini bancari sotto pressione nel lungo periodo. Dividendi attraenti nel breve.',
+    'Lusso': 'Pressione da rallentamento economico globale e dazi USA su import europeo. Clientela high-end più resiliente.',
+    'Industria': 'Dazi USA pesano sull\'export europeo. Automotive sotto forte pressione. Riarmo EU favorisce industria difesa.',
+    'Sanità': 'Settore difensivo in contesti di alta volatilità. Farmaceutico europeo con pipeline innovative.',
+    'Materie Prime': 'Volatile: guerra Iran supporta metalli e energia, ma rischio recessione globale pesa.',
+    'Commodities': 'Supportate da guerra Iran e inflazione alta. Petrolio e gas in primo piano.',
+    'Metalli': 'Domanda strutturale da riarmo e transizione energetica. Oro ai massimi storici come safe haven.',
+    'Supply Chain': 'Disruption da guerra Iran impatta rotte Asia-Europa. Reshoring europeo accelera.',
+  };
+  return situations[p.settore] || 'Prodotto '+p.tipo+' nel settore '+p.settore+'. Segnale AI attuale: '+p.sig+'. Analizza il contesto macro per decisioni operatixe.';
+}
+
+function getTriggers(p, type) {
+  const triggers = {
+    'Difesa': { buy:['Escalation conflitti (attuale)','Nuovi annunci NATO','Contratti difesa EU/USA','Aumento budget governi'], hold:['Posizione già ampia','Attesa risultati trimestrali','Volatilità alta post-rally'], sell:['Accordo di pace improvviso','Tagli budget difesa','Riduzione ordini'] },
+    'Semiconductor': { buy:['Ogni correzione >10%','Domanda AI in crescita','Nvidia batte stime'], hold:['Dopo rally estremo','Consolidamento tecnico'], sell:['Bolla AI','Crisi Taiwan','Taglio investimenti Big Tech'] },
+    'Tecnologia': { buy:['Boom AI continua','Ogni correzione','Crescita cloud'], hold:['Valutazioni già elevate','Attesa earnings'], sell:['Tassi alti a lungo','Recessione USA'] },
+    'Energia': { buy:['Iran chiude Hormuz','OPEC+ taglia','Conflitto si prolunga'], hold:['Prezzi stabili','Dividendi da incassare'], sell:['Pace in Iran','Calo domanda'] },
+    'Finanza': { buy:['Taglio tassi Fed','Crescita economia','M&A nel settore'], hold:['Dividendi stabili','Attesa macro'], sell:['Recessione','Tassi alti a lungo','Crisi bancaria'] },
+    'Lusso': { buy:['Ripresa Cina','USD debole','Turismo in crescita'], hold:['Branding forte','Dividendi'], sell:['Recessione','Dazi USA su import EU','Calo consumi'] },
+    'Difesa2': { buy:['Riarmo EU','Conflitti in corso'], hold:['Già in portafoglio'], sell:['Pace globale'] },
+  };
+  const t = triggers[p.settore] || { buy:['Catalyst positivi specifici','Miglioramento fondamentali'], hold:['Situazione stabile','Attesa news'], sell:['Peggioramento fondamentali','Rischi macro'] };
+  return t[type] || [];
+}
+
+function getPerfData(p) {
+  if (p.sig==='buy') return [100,106,108,112,116+p.score];
+  if (p.sig==='sell') return [100,98,94,90,87];
+  return [100,101,103,102,104];
+}
+
+// ═══════════════════════════════════════════════
+//  AI CALLS
+// ═══════════════════════════════════════════════
+async function callAI(prompt, targetId, barId) {
+  const target = document.getElementById(targetId);
+  const bar = barId ? document.getElementById(barId) : null;
+  if (!target) return;
+  target.textContent = 'Analisi AI in corso...';
+  target.style.opacity = '0.6';
+  if (bar) { bar.classList.add('active'); }
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(c=>c.text||'').join('')||'Errore nella risposta AI.';
+    target.textContent = text;
+    target.style.opacity='1';
+  } catch(e) {
+    target.textContent = 'Errore di connessione all\'AI. Verifica la connessione.';
+    target.style.opacity='1';
+  }
+  if (bar) bar.classList.remove('active');
+  setLastRefresh();
+}
+
+async function askAI(section, prompt) {
+  const ids = {overview:['ai-overview-text','ai-overview-bar'], timeline:['ai-timeline-text','ai-timeline-bar'], signals:['ai-signals-text','ai-signals-bar']};
+  const [tid, bid] = ids[section]||['ai-overview-text','ai-overview-bar'];
+  if (section==='timeline') { document.getElementById('timeline-static').style.display='none'; document.getElementById('ai-timeline-text').style.display='block'; }
+  await callAI(prompt, tid, bid);
+}
+
+async function runAIRefresh() {
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled=true; btn.textContent='⟳ Analisi in corso...';
+  const prompt = 'Briefing mercati globali in italiano (maggio 2026), 200 parole max: 1) Situazione macro chiave (guerra Iran, dazi, AI) 2) Top 3 settori da sovrappesare con motivazione 3) Top 3 settori da sottopesare 4) Un\'opportunità specifica e un rischio da monitorare questa settimana.';
+  await callAI(prompt, 'ai-overview-text', 'ai-overview-bar');
+  btn.disabled=false; btn.textContent='⟳ Aggiorna Analisi AI';
+  showToast('✓ Analisi AI aggiornata!');
+  setLastRefresh();
+}
+
+async function analyzePortfolio() {
+  if (!portfolio.length) { showToast('Aggiungi prodotti al portfolio prima!'); return; }
+  const list = portfolio.map(p=>`${p.nome} (${p.tipo}, ${p.settore})`).join(', ');
+  const prompt = `Analizza questo portfolio in italiano, max 200 parole: [${list}]. Considera il contesto attuale (guerra Iran, riarmo EU, boom AI, dazi Trump). Fornisci: 1) Valutazione bilanciamento del portfolio 2) Punti di forza 3) Rischi di concentrazione 4) 2 suggerimenti concreti per migliorarlo.`;
+  await callAI(prompt, 'ai-port-text', 'ai-port-bar');
+}
+
+async function askPortfolioSignals() {
+  if (!portfolio.length) { showToast('Aggiungi prodotti al portfolio prima!'); return; }
+  const list = portfolio.map(p=>`${p.nome} (${p.settore})`).join(', ');
+  const prompt = `Per questo portfolio [${list}], dato il contesto macro attuale (guerra Iran, riarmo EU, AI boom, dazi Trump), fornisci in italiano segnali operativi chiari: COMPRA (aumenta posizione), TIENI (mantieni), RIDUCI (vendi) per ogni prodotto o gruppo tematico. Formato: lista concisa, 150 parole max.`;
+  await callAI(prompt, 'ai-port-text', 'ai-port-bar');
+}
+
+async function generateSignals() {
+  const prompt = `Genera segnali di trading operativi in italiano per questa settimana (maggio 2026). Per ogni categoria: 1) COMPRA: 5 prodotti/settori specifici con motivazione breve 2) TIENI: 4 posizioni da mantenere 3) RIDUCI: 3 posizioni rischiose. Considera: guerra Iran, riarmo EU (Rheinmetall, BAE, Leonardo), boom AI (Nvidia, ASML, semiconductor), dazi Trump, BCE/Fed. Formato: liste puntate, concise, italiano.`;
+  await callAI(prompt, 'ai-signals-text', 'ai-signals-bar');
+  parseSig();
+}
+
+function parseSig() {
+  const buyList = document.getElementById('sig-buy-list');
+  const holdList = document.getElementById('sig-hold-list');
+  const sellList = document.getElementById('sig-sell-list');
+  const topBuy = ALL_PRODUCTS.filter(p=>p.sig==='buy').sort((a,b)=>b.score-a.score).slice(0,6);
+  const topHold = ALL_PRODUCTS.filter(p=>p.sig==='hold').sort((a,b)=>b.score-a.score).slice(0,5);
+  const topSell = ALL_PRODUCTS.filter(p=>p.sig==='sell').sort((a,b)=>a.score-b.score).slice(0,4);
+  buyList.innerHTML = topBuy.map(p=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;"><strong>${p.nome}</strong> <span class="ticker">${p.ticker}</span><br><span style="color:var(--gray-500)">${p.settore} · Score: ${p.score}/10</span></div>`).join('');
+  holdList.innerHTML = topHold.map(p=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;"><strong>${p.nome}</strong> <span class="ticker">${p.ticker}</span><br><span style="color:var(--gray-500)">${p.settore} · Score: ${p.score}/10</span></div>`).join('');
+  sellList.innerHTML = topSell.map(p=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;"><strong>${p.nome}</strong> <span class="ticker">${p.ticker}</span><br><span style="color:var(--gray-500)">${p.settore} · Score: ${p.score}/10</span></div>`).join('');
+}
+
+async function getSuggestions() {
+  if (!portfolio.length) { askAI('add', 'Suggerisci in italiano 5 prodotti finanziari interessanti da acquistare adesso (maggio 2026) tra ETF difesa EU, semiconductor, energia e mercati emergenti selettivi. Per ognuno: nome, ticker, borsa, motivo in 2 righe.'); return; }
+  const list = portfolio.map(p=>p.nome).join(', ');
+  const prompt = `Dato questo portfolio [${list}], suggerisci in italiano 5 prodotti complementari da aggiungere per migliorare la diversificazione. Per ognuno: nome completo, ticker, borsa, settore, motivazione in 2 righe. Considera il tema difesa EU, semiconductor, energia e riduzione concentrazione.`;
+  await callAI(prompt, 'ai-suggest-text', 'ai-suggest-bar');
+}
+
+// ═══════════════════════════════════════════════
+//  CHARTS
+// ═══════════════════════════════════════════════
+let chartsInited = false;
+let chartsInited2 = false;
+
+function initCharts() {
+  if (!chartsInited) {
+    chartsInited = true;
+    // Signal donut
+    new Chart(document.getElementById('signalDonut'), {
+      type:'doughnut',
+      data:{labels:['Compra','Tieni','Riduci'],datasets:[{data:[ALL_PRODUCTS.filter(p=>p.sig==='buy').length,ALL_PRODUCTS.filter(p=>p.sig==='hold').length,ALL_PRODUCTS.filter(p=>p.sig==='sell').length],backgroundColor:['#16a34a','#d97706','#dc2626'],borderWidth:0,hoverOffset:4}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}}}
+    });
+    // Theme donut
+    const themes = {};
+    ALL_PRODUCTS.forEach(p=>{ themes[p.settore]=(themes[p.settore]||0)+1; });
+    const top8 = Object.entries(themes).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const palettes = ['#2563eb','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#065f46','#92400e'];
+    new Chart(document.getElementById('themeDonut'), {
+      type:'doughnut',
+      data:{labels:top8.map(t=>t[0]),datasets:[{data:top8.map(t=>t[1]),backgroundColor:palettes,borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12}}}}
+    });
+    // Perf line
+    new Chart(document.getElementById('perfLine'), {
+      type:'line',
+      data:{labels:['Gen','Feb','Mar','Apr','Mag'],datasets:[
+        {label:'Difesa EU',data:[100,125,138,165,185],borderColor:'#1e3a5f',tension:0.4,borderWidth:2,pointRadius:3,fill:false},
+        {label:'Semiconductor',data:[100,118,105,158,172],borderColor:'#2563eb',tension:0.4,borderWidth:2,pointRadius:3,fill:false,borderDash:[4,2]},
+        {label:'Energia EU',data:[100,108,118,122,123],borderColor:'#16a34a',tension:0.4,borderWidth:2,pointRadius:3,fill:false,borderDash:[2,3]},
+        {label:'AI/Tech',data:[100,112,108,138,155],borderColor:'#d97706',tension:0.4,borderWidth:2,pointRadius:3,fill:false},
+        {label:'Emergenti',data:[100,100,95,99,102],borderColor:'#6b7280',tension:0.4,borderWidth:2,pointRadius:3,fill:false,borderDash:[6,2]},
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:11}}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:11}},min:90}}}
+    });
+  }
+  if (!chartsInited2 && document.getElementById('section-charts').classList.contains('active')) {
+    chartsInited2 = true;
+    new Chart(document.getElementById('defenseChart'), {
+      type:'line',
+      data:{labels:['Gen','Feb','Mar','Apr','Mag'],datasets:[
+        {label:'WisdomTree Def EU',data:[100,125,138,162,185],borderColor:'#1e3a5f',tension:0.4,borderWidth:2,pointRadius:3,fill:false},
+        {label:'VanEck Defense',data:[100,118,130,158,178],borderColor:'#2563eb',tension:0.4,borderWidth:2,pointRadius:3,fill:false,borderDash:[4,2]},
+        {label:'iShares Aero&Def',data:[100,112,122,145,158],borderColor:'#0891b2',tension:0.4,borderWidth:2,pointRadius:3,fill:false,borderDash:[2,3]},
+        {label:'Xtrackers Def',data:[100,126,138,168,188],borderColor:'#16a34a',tension:0.4,borderWidth:2,pointRadius:3,fill:false},
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12}}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:11}}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:11}},min:90}}}
+    });
+    new Chart(document.getElementById('semiChart'), {
+      type:'line',
+      data:{labels:['Ago25','Set25','Ott25','Nov25','Dic25','Gen26','Feb26','Mar26','Apr26','Mag26'],datasets:[{data:[300,320,340,380,410,450,430,390,490,558],borderColor:'#2563eb',tension:0.4,borderWidth:2.5,pointRadius:4,fill:false,pointBackgroundColor:'#2563eb'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10}}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10},callback:v=>'$'+v},min:250}}}
+    });
+    const bubbleData = [
+      {x:1,y:9,r:14,label:'Difesa EU'},{x:1.5,y:9,r:12,label:'Semiconductor'},{x:2,y:8,r:10,label:'AI/Tech'},
+      {x:2,y:7,r:8,label:'Energia EU'},{x:2,y:7,r:8,label:'Nucleare'},{x:3,y:5,r:8,label:'Commodity'},
+      {x:4,y:4,r:10,label:'Emergenti'},{x:4,y:3,r:10,label:'China Tech'},{x:5,y:2,r:8,label:'Auto EU'},
+      {x:2.5,y:6,r:8,label:'Farmaceutico'},{x:3,y:6,r:8,label:'Finanza EU'},{x:2,y:8,r:10,label:'Agribusiness'},
+    ];
+    const bColors = ['#1e3a5f','#2563eb','#0891b2','#16a34a','#065f46','#d97706','#7c3aed','#dc2626','#ef4444','#6b7280','#374151','#92400e'];
+    new Chart(document.getElementById('bubbleChart'), {
+      type:'bubble',
+      data:{datasets:bubbleData.map((d,i)=>({label:d.label,data:[d],backgroundColor:bColors[i]+'88',borderColor:bColors[i],borderWidth:1.5}))},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label}}},scales:{x:{title:{display:true,text:'Rischio geopolitico (1=basso, 5=alto)',font:{size:11}},min:0,max:6,grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:11}}},y:{title:{display:true,text:'Potenziale 2026 (1=basso, 10=alto)',font:{size:11}},min:0,max:11,grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:11}}}}}
+    });
+    new Chart(document.getElementById('natoChart'), {
+      type:'bar',
+      data:{labels:['2022','2023','2024','2025','2026','→2035'],datasets:[{data:[1.8,2.1,2.4,2.8,3.2,5.0],backgroundColor:['#93c5fd','#60a5fa','#3b82f6','#2563eb','#1d4ed8','#1e3a5f'],borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:11}}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:11},callback:v=>v+'%'},max:6}}}
+    });
+    new Chart(document.getElementById('inflChart'), {
+      type:'bar',
+      data:{labels:['2024','2025','2026 Base','Avverso','Severo'],datasets:[{data:[3.5,2.8,4.4,5.4,6.2],backgroundColor:['#93c5fd','#60a5fa','#d97706','#ef4444','#7f1d1d'],borderRadius:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10}}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10},callback:v=>v+'%'},max:8}}}
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
