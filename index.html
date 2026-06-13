@@ -967,7 +967,7 @@ function updateClock() {
 function setLastRefresh(value) {
   if (typeof value === 'string' && value.trim()) {
     const stamp = value.trim();
-    const hhmm = stamp.match(/\b\d{1,2}:\d{2}\b/);
+    const hhmm = stamp.match(/\b([01]?\d|2[0-3]):[0-5]\d\b/);
     document.getElementById('last-refresh').textContent = 'Agg: ' + (hhmm ? hhmm[0] : stamp);
     document.getElementById('ai-last-update').textContent = stamp;
     return;
@@ -1378,7 +1378,13 @@ function escHtml(value) {
 
 function renderSignalItems(items) {
   if (!Array.isArray(items) || !items.length) return '<div style="font-size:12px;color:var(--gray-500)">Nessun dato disponibile.</div>';
-  return items.map(p=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;"><strong>${escHtml(p?.name || p?.nome || '—')}</strong> <span class="ticker">${escHtml(p?.ticker || '—')}</span><br><span style="color:var(--gray-500)">${escHtml(p?.sector || p?.settore || '—')} · Score: ${escHtml(p?.score ?? '—')}/10</span></div>`).join('');
+  return items.map(p => {
+    const name = escHtml(p?.name || p?.nome || '—');
+    const ticker = escHtml(p?.ticker || '—');
+    const sector = escHtml(p?.sector || p?.settore || '—');
+    const score = escHtml(p?.score ?? '—');
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;"><strong>${name}</strong> <span class="ticker">${ticker}</span><br><span style="color:var(--gray-500)">${sector} · Score: ${score}/10</span></div>`;
+  }).join('');
 }
 
 function applyDashboardRefresh(data) {
