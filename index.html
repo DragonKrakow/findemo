@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script>
   window.FINDEMO_AI_ENDPOINT = 'https://findemo-ai.onrender.com/api/ai';
+  window.FINDEMO_DASHBOARD_ENDPOINT = 'https://findemo-ai.onrender.com/api/dashboard-refresh';
 </script>
 <style>
 :root {
@@ -938,6 +939,7 @@ let dbFilter = 'all';
 let dbSearch = '';
 let autoRefreshTimer = null;
 const AI_ENDPOINT = (window.FINDEMO_AI_ENDPOINT && window.FINDEMO_AI_ENDPOINT.trim()) || '/api/ai';
+const DASHBOARD_ENDPOINT = (window.FINDEMO_DASHBOARD_ENDPOINT && window.FINDEMO_DASHBOARD_ENDPOINT.trim()) || '/api/dashboard-refresh';
 const REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 hours
 
 // ═══════════════════════════════════════════════
@@ -962,12 +964,22 @@ function updateClock() {
     now.toLocaleDateString('it-IT') + ' ' + now.toTimeString().slice(0,5);
 }
 
-function setLastRefresh() {
-  const now = new Date();
+function setLastRefresh(value) {
+  if (typeof value === 'string' && value.trim()) {
+    const stamp = value.trim();
+    const hhmm = stamp.match(/\b([01]?\d|2[0-3]):[0-5]\d\b/);
+    document.getElementById('last-refresh').textContent = 'Agg: ' + (hhmm ? hhmm[0] : stamp);
+    document.getElementById('ai-last-update').textContent = stamp;
+    return;
+  }
+  const now = value instanceof Date
+    ? value
+    : (typeof value === 'number' ? new Date(value) : new Date());
+  const safeNow = Number.isFinite(now.getTime()) ? now : new Date();
   document.getElementById('last-refresh').textContent =
-    'Agg: ' + now.toTimeString().slice(0,5);
+    'Agg: ' + safeNow.toTimeString().slice(0,5);
   document.getElementById('ai-last-update').textContent =
-    now.toLocaleDateString('it-IT') + ' ' + now.toTimeString().slice(0,5);
+    safeNow.toLocaleDateString('it-IT') + ' ' + safeNow.toTimeString().slice(0,5);
 }
 
 function scheduleAutoRefresh() {
@@ -1318,9 +1330,118 @@ async function runAIRefresh() {
   const btn = document.getElementById('refresh-btn');
   btn.disabled=true; btn.textContent='⟳ Analisi in corso...';
   const prompt = 'Briefing mercati globali in italiano (maggio 2026), 200 parole max: 1) Situazione macro chiave (guerra Iran, dazi, AI) 2) Top 3 settori da sovrappesare con motivazione 3) Top 3 settori da sottopesare 4) Un\'opportunità specifica e un rischio da monitorare questa settimana.';
-  const result = await callAI(prompt, 'ai-overview-text', 'ai-overview-bar');
-  btn.disabled=false; btn.textContent='⟳ Aggiorna Analisi AI';
-  showToast(result.ok ? '✓ Analisi AI aggiornata!' : '⚠ Aggiornamento AI non riuscito');
+  const overview = document.getElementById('ai-overview-text');
+  const bar = document.getElementById('ai-overview-bar');
+  overview.textContent = 'Analisi AI in corso...';
+  overview.style.opacity = '0.6';
+  bar.classList.add('active');
+  try {
+    const [aiRes, dashboardRes] = await Promise.all([
+      fetch(AI_ENDPOINT, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify({ prompt })
+      }),
+      fetch(DASHBOARD_ENDPOINT, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify({})
+      })
+    ]);
+    if (!aiRes.ok) {
+      const aiErr = await aiRes.json().catch(() => null);
+      throw new Error(aiErr?.error || 'Servizio AI non disponibile.');
+    }
+    if (!dashboardRes.ok) {
+      const dashboardErr = await dashboardRes.json().catch(() => null);
+      throw new Error(dashboardErr?.error || 'Servizio dashboard refresh non disponibile.');
+    }
+    const [aiData, dashboardData] = await Promise.all([
+      aiRes.json().catch(() => null),
+      dashboardRes.json().catch(() => null)
+    ]);
+
+    overview.textContent = (typeof aiData?.text === 'string' && aiData.text.trim())
+      ? aiData.text.trim()
+      : 'Nessuna analisi disponibile.';
+    overview.style.opacity = '1';
+    applyDashboardRefresh(dashboardData);
+    showToast('✓ Dashboard aggiornata!');
+  } catch (e) {
+    overview.textContent = e?.message || 'Aggiornamento non riuscito. Riprova.';
+    overview.style.opacity='1';
+    showToast('⚠ ' + (e?.message || 'Aggiornamento non riuscito'));
+  } finally {
+    bar.classList.remove('active');
+    btn.disabled=false; btn.textContent='⟳ Aggiorna Analisi AI';
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function renderSignalItems(items) {
+  if (!Array.isArray(items) || !items.length) return '<div style="font-size:12px;color:var(--gray-500)">Nessun dato disponibile.</div>';
+  return items.map(p => {
+    const name = escapeHtml(p?.name || p?.nome || '—');
+    const ticker = escapeHtml(p?.ticker || '—');
+    const sector = escapeHtml(p?.sector || p?.settore || '—');
+    const score = escapeHtml(p?.score ?? '—');
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;"><strong>${name}</strong> <span class="ticker">${ticker}</span><br><span style="color:var(--gray-500)">${sector} · Score: ${score}/10</span></div>`;
+  }).join('');
+}
+
+function normalizeTone(value) {
+  return ['blue', 'red', 'green', 'amber'].includes(value) ? value : 'blue';
+}
+
+function applyDashboardRefresh(data) {
+  if (!data || typeof data !== 'object') return;
+
+  if (data.kpis && typeof data.kpis === 'object') {
+    const total = Number.isFinite(data.kpis.total) ? data.kpis.total : '—';
+    const buy = Number.isFinite(data.kpis.buy) ? data.kpis.buy : '—';
+    const hold = Number.isFinite(data.kpis.hold) ? data.kpis.hold : '—';
+    const sell = Number.isFinite(data.kpis.sell) ? data.kpis.sell : '—';
+    document.getElementById('kpi-total').textContent = total;
+    document.getElementById('kpi-buy').textContent = buy;
+    document.getElementById('kpi-hold').textContent = hold;
+    document.getElementById('kpi-sell').textContent = sell;
+    document.getElementById('nc-total').textContent = total;
+    document.getElementById('nc-buy').textContent = buy;
+  }
+
+  if (data.signals && typeof data.signals === 'object') {
+    document.getElementById('sig-buy-list').innerHTML = renderSignalItems(data.signals.buy);
+    document.getElementById('sig-hold-list').innerHTML = renderSignalItems(data.signals.hold);
+    document.getElementById('sig-sell-list').innerHTML = renderSignalItems(data.signals.sell);
+  }
+
+  if (Array.isArray(data.timeline)) {
+    const timeline = document.getElementById('timeline-static');
+    timeline.innerHTML = data.timeline.map(item => `
+      <div class="timeline-item">
+        <div class="tl-dot ${escapeHtml(normalizeTone(item?.tone))}"></div>
+        <div class="tl-date">${escapeHtml(item?.date || '—')}</div>
+        <div class="tl-title">${escapeHtml(item?.title || '—')}</div>
+        <div class="tl-body">${escapeHtml(item?.body || '')}</div>
+      </div>
+    `).join('');
+    timeline.style.display = 'block';
+    document.getElementById('ai-timeline-text').style.display = 'none';
+  }
+
+  if (typeof data.timestamp === 'string' && data.timestamp.trim()) {
+    setLastRefresh(data.timestamp);
+  } else {
+    setLastRefresh();
+  }
 }
 
 async function analyzePortfolio() {
