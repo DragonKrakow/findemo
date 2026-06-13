@@ -973,7 +973,7 @@ function setLastRefresh(value) {
     return;
   }
   const now = value ? new Date(value) : new Date();
-  const safeNow = Number.isNaN(now.getTime()) ? new Date() : now;
+  const safeNow = Number.isFinite(now.getTime()) ? now : new Date();
   document.getElementById('last-refresh').textContent =
     'Agg: ' + safeNow.toTimeString().slice(0,5);
   document.getElementById('ai-last-update').textContent =
@@ -1346,10 +1346,18 @@ async function runAIRefresh() {
         body: JSON.stringify({})
       })
     ]);
-    const aiData = await aiRes.json().catch(() => null);
-    const dashboardData = await dashboardRes.json().catch(() => null);
-    if (!aiRes.ok) throw new Error(aiData?.error || 'Servizio AI non disponibile.');
-    if (!dashboardRes.ok) throw new Error(dashboardData?.error || 'Servizio dashboard refresh non disponibile.');
+    if (!aiRes.ok) {
+      const aiErr = await aiRes.json().catch(() => null);
+      throw new Error(aiErr?.error || 'Servizio AI non disponibile.');
+    }
+    if (!dashboardRes.ok) {
+      const dashboardErr = await dashboardRes.json().catch(() => null);
+      throw new Error(dashboardErr?.error || 'Servizio dashboard refresh non disponibile.');
+    }
+    const [aiData, dashboardData] = await Promise.all([
+      aiRes.json().catch(() => null),
+      dashboardRes.json().catch(() => null)
+    ]);
 
     overview.textContent = (typeof aiData?.text === 'string' && aiData.text.trim())
       ? aiData.text.trim()
@@ -1387,6 +1395,10 @@ function renderSignalItems(items) {
   }).join('');
 }
 
+function normalizeTone(value) {
+  return ['blue', 'red', 'green', 'amber'].includes(value) ? value : 'blue';
+}
+
 function applyDashboardRefresh(data) {
   if (!data || typeof data !== 'object') return;
 
@@ -1413,7 +1425,7 @@ function applyDashboardRefresh(data) {
     const timeline = document.getElementById('timeline-static');
     timeline.innerHTML = data.timeline.map(item => `
       <div class="timeline-item">
-        <div class="tl-dot ${escHtml(item?.tone || 'blue')}"></div>
+        <div class="tl-dot ${normalizeTone(item?.tone)}"></div>
         <div class="tl-date">${escHtml(item?.date || '—')}</div>
         <div class="tl-title">${escHtml(item?.title || '—')}</div>
         <div class="tl-body">${escHtml(item?.body || '')}</div>
