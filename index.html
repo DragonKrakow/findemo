@@ -4,7 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FinDashboard Pro — Geopolitical & Macro Risk Matrix</title>
-  
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-K1Q5VEX90E"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-K1Q5VEX90E');
+  </script>
+
   <!-- Chart.js Engine integration -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
@@ -684,6 +693,15 @@ function nav(sectionId, btn) {
     add: "Register Asset Configuration", sources: "Model Data Feeds", timeline: "Systemic Event Log Matrix"
   };
   document.getElementById('page-title').innerText = titles[sectionId] || "FinDashboard Pro";
+
+  // Google Analytics: track section switches as virtual pageviews
+  if (typeof gtag === 'function') {
+    gtag('event', 'page_view', {
+      page_title: titles[sectionId] || sectionId,
+      page_path: '/' + sectionId,
+      page_location: window.location.origin + window.location.pathname + '#' + sectionId
+    });
+  }
 }
 
 function showToast(text) {
@@ -753,9 +771,15 @@ function togglePortfolio(ticker) {
   if(idx > -1) {
     MY_PORTFOLIO.splice(idx, 1);
     showToast(`${item.name} dropped from monitoring node.`);
+    if (typeof gtag === 'function') {
+      gtag('event', 'remove_from_portfolio', { item_name: item.name, item_ticker: item.ticker });
+    }
   } else {
     MY_PORTFOLIO.push(item);
     showToast(`${item.name} successfully wired to portfolio tracker.`);
+    if (typeof gtag === 'function') {
+      gtag('event', 'add_to_portfolio', { item_name: item.name, item_ticker: item.ticker, item_sector: item.sector });
+    }
   }
   renderPortfolioTable();
   renderDatabaseTable(document.getElementById('dbSearch').value);
@@ -805,6 +829,11 @@ function addCustomProduct(e) {
 
   MY_PORTFOLIO.push(newProd);
   showToast(`${name} added to portfolio buffer.`);
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'add_custom_asset', { item_name: name, item_ticker: ticker, item_sector: sector, item_exchange: exchange });
+  }
+
   document.getElementById('customProductForm').reset();
   renderPortfolioTable();
   updateDashboardKPIs();
@@ -846,6 +875,10 @@ async function runAIRefresh() {
   const txt = document.getElementById('ai-overview-text');
   const bar = document.getElementById('ai-overview-bar');
   showToast("Infrastructural handshake initiated with Render web service cluster...");
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'ai_refresh_triggered', { engine_panel: 'overview' });
+  }
   
   bar.classList.add('active');
   txt.innerText = "Interrogating Render server container pipelines. Compiling 2026 systemic risk matrices...";
@@ -871,6 +904,10 @@ async function askAI(panelType, prompt) {
   
   txt.innerText = "Fetching contextual generation matrix from Render host nodes...";
   bar.classList.add('active');
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'ai_query_submitted', { engine_panel: panelType });
+  }
   
   const aiRes = await executeRenderRefresh(prompt);
   bar.classList.remove('active');
@@ -888,6 +925,10 @@ async function analyzePortfolio() {
   
   if(bar) bar.classList.add('active');
   txt.innerText = "Transmitting active client asset schema to Render secure containers...";
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'portfolio_analysis_run', { portfolio_size: MY_PORTFOLIO.length });
+  }
   
   const tickersStr = MY_PORTFOLIO.map(x => `${x.name} (${x.ticker})`).join(", ");
   const prompt = `Provide a professional portfolio diversity audit and risk vulnerability profile based on these specific instruments: ${tickersStr}, adjusting allocations for 2026 trade barriers, supply chain shocks, and persistent inflation. Response must be in English.`;
@@ -937,6 +978,10 @@ async function openModal(product) {
 
   const aitxt = document.getElementById('m-ai-text');
   aitxt.innerText = "Querying localized predictive model microservice via Render infrastructure...";
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'select_item', { item_name: product.name, item_ticker: product.ticker, item_sector: product.sector });
+  }
 
   const prompt = `Provide a crisp, professional three-line financial evaluation summary for asset: ${product.name} (${product.ticker}) - Sector focus: ${product.sector}. Explicitly handle the 2026 economic environment in English.`;
   const response = await executeRenderRefresh(prompt);
