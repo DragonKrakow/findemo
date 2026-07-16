@@ -5,14 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FinDashboard Pro — Geopolitical & Macro Risk Matrix</title>
 
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-K1Q5VEX90E"></script>
+  <!-- Google tag (gtag.js) with Consent Mode v2 -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
+
+    // Default: deny all tracking until the user makes a choice.
+    // This must run BEFORE gtag.js loads.
+    gtag('consent', 'default', {
+      'analytics_storage': 'denied',
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'wait_for_update': 500
+    });
+
+    // If the user already chose "accept" on a previous visit, restore that.
+    if (localStorage.getItem('cookie_consent') === 'accepted') {
+      gtag('consent', 'update', { 'analytics_storage': 'granted' });
+    }
+
     gtag('js', new Date());
     gtag('config', 'G-K1Q5VEX90E');
   </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-K1Q5VEX90E"></script>
 
   <!-- Chart.js Engine integration -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -216,6 +232,47 @@
       .kpi-row { grid-template-columns: repeat(2, 1fr); }
       .macro-grid, .source-grid, .charts-grid { grid-template-columns: 1fr; }
     }
+
+    /* Cookie Consent Banner */
+    .cookie-banner {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-color);
+      box-shadow: 0 -10px 30px -10px rgba(0,0,0,0.15);
+      padding: 20px 24px;
+      z-index: 3000;
+      transform: translateY(100%);
+      transition: transform 0.35s ease;
+    }
+    .cookie-banner.show { transform: translateY(0); }
+    .cookie-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+    }
+    .cookie-text { flex: 1; min-width: 260px; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .cookie-text strong { color: var(--text-main); }
+    .cookie-text a { color: var(--primary-light); text-decoration: underline; }
+    .cookie-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-cookie-reject { background: none; border: 1px solid var(--border-color); color: var(--text-muted); padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-cookie-reject:hover { background: var(--bg-primary); }
+    .btn-cookie-manage { background: none; border: none; color: var(--primary-light); padding: 9px 4px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline; }
+    .btn-cookie-accept { background: var(--primary-light); border: none; color: white; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-cookie-accept:hover { background: #1d4ed8; }
+
+    /* Cookie Preferences Modal */
+    .cookie-prefs-body { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+    .cookie-cat { border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 16px; }
+    .cookie-cat-head { display: flex; justify-content: space-between; align-items: center; }
+    .cookie-cat-title { font-size: 14px; font-weight: 700; color: var(--primary); }
+    .cookie-cat-desc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
+    .toggle-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 999px; transition: 0.2s; }
+    .toggle-slider::before { content: ''; position: absolute; height: 16px; width: 16px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+    .toggle-switch input:checked + .toggle-slider { background: var(--primary-light); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .toggle-switch input:disabled + .toggle-slider { opacity: 0.6; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -235,6 +292,9 @@
       <button class="nav-btn" onclick="nav('add', this)">📝 Register Asset</button>
       <button class="nav-btn" onclick="nav('sources', this)">🔌 Ingestion Streams</button>
       <button class="nav-btn" onclick="nav('timeline', this)">⏳ Event Matrix Log</button>
+    </div>
+    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+      <button class="nav-btn" style="font-size: 12px; color: var(--text-muted);" onclick="openCookiePrefs()">🍪 Cookie Settings</button>
     </div>
   </aside>
 
@@ -615,6 +675,13 @@
   </main>
 </div>
 
+<!-- FOOTER LINKS -->
+<div style="max-width:1600px; margin:16px auto 90px; padding:0 20px; display:flex; justify-content:center; gap:16px; font-size:12px; color:var(--text-muted);">
+  <a href="privacy-policy.html" style="color:var(--text-muted); text-decoration:underline;">Privacy Policy</a>
+  <span>•</span>
+  <button onclick="openCookiePrefs()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; text-decoration:underline; font-size:12px; font-family:inherit; padding:0;">Cookie Settings</button>
+</div>
+
 <!-- PRODUCT MODAL DETAILS -->
 <div class="modal-overlay" id="productModal">
   <div class="modal">
@@ -633,6 +700,58 @@
     <div class="modal-ai-section">
       <div class="modal-ai-title">🤖 Predictive Assessment — Render Cloud Engine</div>
       <div class="modal-ai-text" id="m-ai-text">Select an asset to fetch its dedicated matrix evaluation from the live cluster...</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- COOKIE CONSENT BANNER -->
+<div class="cookie-banner" id="cookieBanner">
+  <div class="cookie-inner">
+    <div class="cookie-text">
+      <strong>We use cookies.</strong> We use Google Analytics to understand how visitors use FinMatrix Pro so we can improve it. These cookies only run with your consent. See our <a href="privacy-policy.html">Privacy Policy</a> for details.
+    </div>
+    <div class="cookie-actions">
+      <button class="btn-cookie-manage" onclick="openCookiePrefs()">Manage preferences</button>
+      <button class="btn-cookie-reject" onclick="setCookieConsent(false)">Reject</button>
+      <button class="btn-cookie-accept" onclick="setCookieConsent(true)">Accept</button>
+    </div>
+  </div>
+</div>
+
+<!-- COOKIE PREFERENCES MODAL -->
+<div class="modal-overlay" id="cookiePrefsModal">
+  <div class="modal" style="max-width: 480px;">
+    <button class="modal-close" onclick="closeCookiePrefs()">×</button>
+    <div class="modal-header">
+      <div class="modal-name">Cookie Preferences</div>
+      <div style="font-size:13px; color:var(--text-muted); margin-top:6px;">Choose which cookies FinMatrix Pro is allowed to use. See our <a href="privacy-policy.html" style="color:var(--primary-light);">Privacy Policy</a> for more detail.</div>
+    </div>
+    <div class="cookie-prefs-body">
+      <div class="cookie-cat">
+        <div class="cookie-cat-head">
+          <div class="cookie-cat-title">Strictly Necessary</div>
+          <label class="toggle-switch">
+            <input type="checkbox" checked disabled>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="cookie-cat-desc">Required for the site to function (e.g. remembering your cookie choice). Cannot be disabled.</div>
+      </div>
+      <div class="cookie-cat">
+        <div class="cookie-cat-head">
+          <div class="cookie-cat-title">Analytics (Google Analytics)</div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="prefAnalytics">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="cookie-cat-desc">Helps us understand which sections and features are used, so we can improve the dashboard. No personal data is sold.</div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" onclick="savePrefsAndClose()">Save preferences</button>
+      <button class="btn-secondary" onclick="closeCookiePrefs()">Cancel</button>
     </div>
   </div>
 </div>
@@ -671,7 +790,52 @@ window.addEventListener('DOMContentLoaded', () => {
   updateDashboardKPIs();
   initCharts();
   renderPortfolioTable();
+  initCookieConsent();
 });
+
+// ── COOKIE CONSENT HANDLING ──
+function initCookieConsent() {
+  const saved = localStorage.getItem('cookie_consent');
+  if (saved === null) {
+    // No choice made yet — show the banner
+    document.getElementById('cookieBanner').classList.add('show');
+  }
+  // If a choice was already made, Consent Mode default/update in <head> already handled it.
+}
+
+function setCookieConsent(accepted) {
+  localStorage.setItem('cookie_consent', accepted ? 'accepted' : 'rejected');
+
+  if (typeof gtag === 'function') {
+    gtag('consent', 'update', {
+      'analytics_storage': accepted ? 'granted' : 'denied'
+    });
+  }
+
+  document.getElementById('cookieBanner').classList.remove('show');
+
+  if (accepted) {
+    showToast('Analytics cookies enabled. Thank you!');
+  } else {
+    showToast('Analytics cookies stay disabled. You can change this anytime in Cookie Preferences.');
+  }
+}
+
+function openCookiePrefs() {
+  const current = localStorage.getItem('cookie_consent');
+  document.getElementById('prefAnalytics').checked = (current === 'accepted');
+  document.getElementById('cookiePrefsModal').classList.add('open');
+}
+
+function closeCookiePrefs() {
+  document.getElementById('cookiePrefsModal').classList.remove('open');
+}
+
+function savePrefsAndClose() {
+  const analyticsAllowed = document.getElementById('prefAnalytics').checked;
+  setCookieConsent(analyticsAllowed);
+  closeCookiePrefs();
+}
 
 function updateRefreshTime() {
   const now = new Date();
